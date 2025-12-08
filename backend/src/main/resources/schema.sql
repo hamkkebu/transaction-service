@@ -1,41 +1,68 @@
 -- Transaction Service Schema
 
 -- 거래 테이블
-CREATE TABLE IF NOT EXISTS tbl_transaction (
+DROP TABLE IF EXISTS tbl_transaction;
+CREATE TABLE tbl_transaction (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    ledger_id BIGINT NOT NULL,
     user_id BIGINT NOT NULL,
+    type VARCHAR(20) NOT NULL,
     amount DECIMAL(19, 4) NOT NULL,
-    transaction_type VARCHAR(50) NOT NULL,
     description VARCHAR(500),
-    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    category VARCHAR(100),
+    transaction_date DATE NOT NULL,
+    memo VARCHAR(1000),
+
+    -- Auditing Fields (from BaseEntity)
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by VARCHAR(50),
+    updated_by VARCHAR(50),
+
+    -- Soft Delete Fields (from BaseEntity)
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    deleted_at DATETIME,
+
+    INDEX idx_ledger_id (ledger_id),
     INDEX idx_user_id (user_id),
-    INDEX idx_status (status),
-    INDEX idx_created_at (created_at)
+    INDEX idx_transaction_date (transaction_date),
+    INDEX idx_is_deleted (is_deleted)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 카테고리 테이블
-CREATE TABLE IF NOT EXISTS tbl_category (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    description VARCHAR(500),
-    parent_id BIGINT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (parent_id) REFERENCES tbl_category(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- ==========================================
+-- Transactional Outbox 테이블
+-- ==========================================
+DROP TABLE IF EXISTS tbl_outbox_event;
+CREATE TABLE tbl_outbox_event (
+    -- Primary Key
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
 
--- Outbox Event 테이블 (이벤트 소싱)
-CREATE TABLE IF NOT EXISTS tbl_outbox_event (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    aggregate_type VARCHAR(100) NOT NULL,
-    aggregate_id VARCHAR(100) NOT NULL,
-    event_type VARCHAR(100) NOT NULL,
-    payload JSON NOT NULL,
-    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    processed_at TIMESTAMP NULL,
-    INDEX idx_status (status),
-    INDEX idx_created_at (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    -- Event Information
+    event_id VARCHAR(36) NOT NULL UNIQUE,      -- UUID 형태의 이벤트 고유 ID
+    event_type VARCHAR(100) NOT NULL,          -- 이벤트 타입 (예: USER_CREATED)
+    topic VARCHAR(100) NOT NULL,               -- Kafka 토픽명
+    resource_id VARCHAR(100) NOT NULL,         -- 리소스 ID (Kafka 파티션 키)
+
+    -- Event Payload (JSON)
+    payload JSON NOT NULL,                     -- 전체 이벤트 객체를 JSON으로 직렬화
+
+    -- Status Management
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',  -- PENDING, PUBLISHED, FAILED
+    retry_count INT NOT NULL DEFAULT 0,        -- 재시도 횟수
+    max_retry INT NOT NULL DEFAULT 3,          -- 최대 재시도 횟수
+    version BIGINT NOT NULL DEFAULT 0,         -- 낙관적 락을 위한 버전 필드
+
+    -- Error Tracking
+    error_message TEXT,                        -- 실패 시 에러 메시지
+
+    -- Timestamps
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    published_at DATETIME,                     -- 발행 완료 시각
+    last_retry_at DATETIME,                    -- 마지막 재시도 시각
+
+    -- Indexes
+    INDEX idx_status_created (status, created_at),
+    INDEX idx_event_id (event_id),
+    INDEX idx_topic (topic)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Transactional Outbox 이벤트 테이블 - DB 트랜잭션과 이벤트 발행의 원자성 보장';
