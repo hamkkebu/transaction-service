@@ -1,6 +1,7 @@
 package com.hamkkebu.transactionservice.controller;
 
 import com.hamkkebu.boilerplate.common.dto.ApiResponse;
+import com.hamkkebu.transactionservice.data.dto.PeriodTransactionSummary;
 import com.hamkkebu.transactionservice.data.dto.TransactionRequest;
 import com.hamkkebu.transactionservice.data.dto.TransactionResponse;
 import com.hamkkebu.transactionservice.data.dto.TransactionSummary;
@@ -17,8 +18,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Slf4j
@@ -101,5 +104,53 @@ public class TransactionController {
         log.info("DELETE /api/v1/transactions/{}", id);
         transactionService.deleteTransaction(id);
         return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    // ==================== 기간별 조회 API ====================
+
+    @GetMapping("/daily")
+    @Operation(summary = "일별 거래 요약 조회", description = "특정 날짜의 거래 요약을 조회합니다")
+    public ResponseEntity<ApiResponse<PeriodTransactionSummary>> getDailySummary(
+            @RequestParam Long ledgerId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+
+        log.info("GET /api/v1/transactions/daily?ledgerId={}&date={}", ledgerId, date);
+        PeriodTransactionSummary summary = transactionService.getDailySummary(ledgerId, date);
+        return ResponseEntity.ok(ApiResponse.success(summary));
+    }
+
+    @GetMapping("/monthly")
+    @Operation(summary = "월별 거래 요약 조회", description = "특정 월의 거래 요약을 조회합니다 (일별 상세 포함)")
+    public ResponseEntity<ApiResponse<PeriodTransactionSummary>> getMonthlySummary(
+            @RequestParam Long ledgerId,
+            @RequestParam int year,
+            @RequestParam int month) {
+
+        log.info("GET /api/v1/transactions/monthly?ledgerId={}&year={}&month={}", ledgerId, year, month);
+        PeriodTransactionSummary summary = transactionService.getMonthlySummary(ledgerId, year, month);
+        return ResponseEntity.ok(ApiResponse.success(summary));
+    }
+
+    @GetMapping("/yearly")
+    @Operation(summary = "년별 거래 요약 조회", description = "특정 연도의 거래 요약을 조회합니다 (월별 상세 포함)")
+    public ResponseEntity<ApiResponse<PeriodTransactionSummary>> getYearlySummary(
+            @RequestParam Long ledgerId,
+            @RequestParam int year) {
+
+        log.info("GET /api/v1/transactions/yearly?ledgerId={}&year={}", ledgerId, year);
+        PeriodTransactionSummary summary = transactionService.getYearlySummary(ledgerId, year);
+        return ResponseEntity.ok(ApiResponse.success(summary));
+    }
+
+    @GetMapping("/period")
+    @Operation(summary = "기간별 거래 요약 조회", description = "지정한 기간의 거래 요약을 조회합니다")
+    public ResponseEntity<ApiResponse<PeriodTransactionSummary>> getPeriodSummary(
+            @RequestParam Long ledgerId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        log.info("GET /api/v1/transactions/period?ledgerId={}&startDate={}&endDate={}", ledgerId, startDate, endDate);
+        PeriodTransactionSummary summary = transactionService.getPeriodSummary(ledgerId, startDate, endDate);
+        return ResponseEntity.ok(ApiResponse.success(summary));
     }
 }

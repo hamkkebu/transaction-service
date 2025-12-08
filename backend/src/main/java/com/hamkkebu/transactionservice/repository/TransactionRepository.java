@@ -35,11 +35,34 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     @Query("SELECT COUNT(t) FROM Transaction t WHERE t.ledgerId = :ledgerId AND t.isDeleted = false")
     Long countByLedgerId(@Param("ledgerId") Long ledgerId);
 
-    // 기간별 거래 조회
+    // 기간별 거래 조회 (페이징)
     Page<Transaction> findByLedgerIdAndTransactionDateBetweenAndIsDeletedFalseOrderByTransactionDateDescIdDesc(
             Long ledgerId, LocalDate startDate, LocalDate endDate, Pageable pageable);
+
+    // 기간별 거래 조회 (전체)
+    List<Transaction> findByLedgerIdAndTransactionDateBetweenAndIsDeletedFalseOrderByTransactionDateDescIdDesc(
+            Long ledgerId, LocalDate startDate, LocalDate endDate);
 
     // 카테고리별 거래 조회
     Page<Transaction> findByLedgerIdAndCategoryAndIsDeletedFalseOrderByTransactionDateDescIdDesc(
             Long ledgerId, String category, Pageable pageable);
+
+    // 기간별 총 수입 계산
+    @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t " +
+           "WHERE t.ledgerId = :ledgerId AND t.type = :type " +
+           "AND t.transactionDate BETWEEN :startDate AND :endDate AND t.isDeleted = false")
+    BigDecimal sumAmountByLedgerIdAndTypeAndDateRange(
+            @Param("ledgerId") Long ledgerId,
+            @Param("type") TransactionType type,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
+
+    // 기간별 거래 수 계산
+    @Query("SELECT COUNT(t) FROM Transaction t " +
+           "WHERE t.ledgerId = :ledgerId " +
+           "AND t.transactionDate BETWEEN :startDate AND :endDate AND t.isDeleted = false")
+    Long countByLedgerIdAndDateRange(
+            @Param("ledgerId") Long ledgerId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 }
