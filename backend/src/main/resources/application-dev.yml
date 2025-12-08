@@ -1,12 +1,140 @@
+# 개발 환경 설정 (Development Profile)
+# 활성화: --spring.profiles.active=dev 또는 SPRING_PROFILES_ACTIVE=dev
+
+server:
+  # transaction-service는 8083 포트 사용 (auth: 8081, ledger: 8082)
+  port: 8083
+
 spring:
+  application:
+    name: transaction-service-dev
+
+  datasource:
+    # Transaction Service는 3309 포트 사용 (Auth: 3307, Ledger: 3308)
+    url: jdbc:mysql://localhost:3309/hamkkebu_transaction?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
   jpa:
     show-sql: true
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+        use_sql_comments: true
 
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: transaction-service-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        # SECURITY: "*" 사용 시 Insecure Deserialization 취약점 발생
+        spring.json.trusted.packages: "com.hamkkebu.transactionservice.*,com.hamkkebu.boilerplate.*"
+
+  # Redis 설정 (boilerplate의 Redis 컨테이너 사용)
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+# Kafka 토픽 설정
+kafka:
+  topics:
+    user-events: user.events
+
+# gRPC 서버 설정
+grpc:
+  server:
+    # transaction-service gRPC는 9094 포트 사용 (auth: 9091, ledger: 9093)
+    port: 9094
+    max-inbound-message-size: 4194304  # 4MB
+    max-inbound-metadata-size: 8192    # 8KB
+
+# Actuator 개발 환경 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,env
+  endpoint:
+    health:
+      show-details: always
+  health:
+    redis:
+      enabled: false
+
+# 로깅 설정 (개발 환경)
 logging:
   level:
-    com.hamkkebu: DEBUG
+    com.hamkkebu.transactionservice: DEBUG
+    com.hamkkebu.boilerplate: DEBUG
+    org.springframework.web: DEBUG
     org.springframework.security: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.apache.kafka: INFO
+    org.springframework.kafka: DEBUG
+
+# CORS 개발 환경 설정
+cors:
+  allowed-origins:
+    # Frontend 포트 (boilerplate: 3000, auth: 3001, ledger: 3002, transaction: 3003)
+    - "http://localhost:3000"
+    - "http://localhost:3001"
+    - "http://localhost:3002"
+    - "http://localhost:3003"
+    # Backend 포트 (boilerplate: 8080, auth: 8081, ledger: 8082, transaction: 8083)
+    - "http://localhost:8080"
+    - "http://localhost:8081"
+    - "http://localhost:8082"
+    - "http://localhost:8083"
+    - "http://127.0.0.1:3000"
+    - "http://127.0.0.1:3001"
+    - "http://127.0.0.1:3002"
+    - "http://127.0.0.1:3003"
+    - "http://127.0.0.1:8080"
+    - "http://127.0.0.1:8081"
+    - "http://127.0.0.1:8082"
+    - "http://127.0.0.1:8083"
+
+# SpringDoc OpenAPI (Swagger) 설정
+springdoc:
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    doc-expansion: none
+    tags-sorter: alpha
+    operations-sorter: alpha
+    display-request-duration: true
+    deep-linking: true
+    try-it-out-enabled: true
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  group-configs:
+    - group: transaction-service
+      paths-to-match: /api/v1/**
+      packages-to-scan: com.hamkkebu.transactionservice
+  default-produces-media-type: application/json
+  default-consumes-media-type: application/json

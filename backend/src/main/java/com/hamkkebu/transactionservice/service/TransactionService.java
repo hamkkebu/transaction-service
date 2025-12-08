@@ -1,5 +1,7 @@
 package com.hamkkebu.transactionservice.service;
 
+import com.hamkkebu.boilerplate.common.exception.BusinessException;
+import com.hamkkebu.boilerplate.common.exception.ErrorCode;
 import com.hamkkebu.transactionservice.data.dto.TransactionRequest;
 import com.hamkkebu.transactionservice.data.dto.TransactionResponse;
 import com.hamkkebu.transactionservice.data.dto.TransactionSummary;
@@ -41,7 +43,7 @@ public class TransactionService {
     @Transactional(readOnly = true)
     public TransactionResponse getTransaction(Long id) {
         Transaction transaction = transactionRepository.findByIdAndIsDeletedFalse(id)
-                .orElseThrow(() -> new RuntimeException("Transaction not found: " + id));
+                .orElseThrow(() -> new BusinessException(ErrorCode.TRANSACTION_NOT_FOUND));
         return transactionMapper.toResponse(transaction);
     }
 
@@ -66,7 +68,7 @@ public class TransactionService {
         log.info("Updating transaction {}", id);
 
         Transaction transaction = transactionRepository.findByIdAndIsDeletedFalse(id)
-                .orElseThrow(() -> new RuntimeException("Transaction not found: " + id));
+                .orElseThrow(() -> new BusinessException(ErrorCode.TRANSACTION_NOT_FOUND));
 
         transactionMapper.updateEntity(request, transaction);
         Transaction updatedTransaction = transactionRepository.save(transaction);
@@ -80,7 +82,7 @@ public class TransactionService {
         log.info("Deleting transaction {}", id);
 
         Transaction transaction = transactionRepository.findByIdAndIsDeletedFalse(id)
-                .orElseThrow(() -> new RuntimeException("Transaction not found: " + id));
+                .orElseThrow(() -> new BusinessException(ErrorCode.TRANSACTION_NOT_FOUND));
 
         transaction.delete();
         transactionRepository.save(transaction);
