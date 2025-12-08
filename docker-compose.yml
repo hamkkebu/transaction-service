@@ -1,0 +1,88 @@
+services:
+  database:
+    image: mysql:8.0
+    platform: linux/amd64
+    container_name: hamkkebu-transaction-service-db
+    ports:
+      # Transaction Service는 MySQL 3309 포트 사용
+      # SECURITY: 포트를 127.0.0.1로 바인딩 (외부 접근 차단)
+      - "127.0.0.1:${DB_PORT:-3309}:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}
+      - MYSQL_DATABASE=${DB_NAME:-hamkkebu_transaction}
+    command:
+      - --innodb-use-native-aio=0
+      - --innodb-flush-method=fsync
+      - --default-authentication-plugin=mysql_native_password
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./backend/src/main/resources/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
+      - ./backend/src/main/resources/data.sql:/docker-entrypoint-initdb.d/2-data.sql
+    networks:
+      - transaction-internal
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: hamkkebu-transaction-service-backend
+    ports:
+      # transaction-service는 8083 포트 사용
+      - "${BACKEND_PORT:-8083}:8083"
+      # gRPC 포트 (transaction-service는 9094)
+      - "${GRPC_PORT:-9094}:9094"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      # 개발 프로필 활성화
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      # 내부 네트워크의 DB에 연결
+      SPRING_DATASOURCE_URL: jdbc:mysql://database:3306/${DB_NAME:-hamkkebu_transaction}?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      # 공유 인프라 네트워크의 Redis/Kafka에 연결 (컨테이너 이름 사용)
+      REDIS_HOST: hamkkebu-boilerplate-redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-devRedisPassword123!}
+      KAFKA_BOOTSTRAP_SERVERS: hamkkebu-boilerplate-kafka:29092
+      # Auth Service gRPC 연결
+      AUTH_SERVICE_HOST: hamkkebu-auth-service-backend
+      AUTH_SERVICE_GRPC_PORT: 9091
+    restart: always
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - transaction-internal
+      - hamkkebu-infra
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: hamkkebu-transaction-service-frontend
+    ports:
+      # Transaction Service Frontend는 3003 포트 사용
+      - "${FRONTEND_PORT:-3003}:80"
+    restart: always
+    depends_on:
+      - backend
+    networks:
+      - transaction-internal
+
+networks:
+  # 내부 전용 네트워크 (DB 격리)
+  transaction-internal:
+    driver: bridge
+
+  # 공유 인프라 네트워크 (외부에서 생성됨)
+  hamkkebu-infra:
+    external: true
+
+volumes:
+  mysql-data:

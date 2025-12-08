@@ -1,0 +1,20 @@
+# Environment files
+.env
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# macOS
+.DS_Store
+
+# Gradle
+.gradle/
+build/
+
+# Node
+node_modules/
+
+# Logs
+*.log

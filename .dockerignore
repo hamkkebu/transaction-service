@@ -1,0 +1,30 @@
+# Git
+.git
+.gitignore
+.gitmodules
+
+# IDE
+.idea
+.vscode
+*.iml
+
+# Node
+**/node_modules
+**/dist
+
+# Gradle
+**/.gradle
+**/build
+
+# Environment
+.env
+.env.local
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# Documentation
+README.md
