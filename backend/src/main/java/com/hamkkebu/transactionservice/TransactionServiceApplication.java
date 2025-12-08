@@ -9,15 +9,17 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @SpringBootApplication
 @ComponentScan(basePackages = {
     "com.hamkkebu.transactionservice",
-    "com.hamkkebu.common"
+    "com.hamkkebu.boilerplate.common",
+    "com.hamkkebu.boilerplate.config"
 })
 @EntityScan(basePackages = {
     "com.hamkkebu.transactionservice.data.entity",
-    "com.hamkkebu.common.data.entity"
+    "com.hamkkebu.boilerplate.common.entity",
+    "com.hamkkebu.boilerplate.data.entity"
 })
 @EnableJpaRepositories(basePackages = {
     "com.hamkkebu.transactionservice.repository",
-    "com.hamkkebu.common.repository"
+    "com.hamkkebu.boilerplate.repository"
 })
 public class TransactionServiceApplication {
 
