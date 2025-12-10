@@ -70,6 +70,7 @@ spring:
 kafka:
   topics:
     user-events: user.events
+    transaction-events: transaction.events
 
 # gRPC 설정 (내부 서비스 간 통신)
 grpc:

@@ -11,6 +11,7 @@ import com.hamkkebu.transactionservice.data.dto.TransactionSummary;
 import com.hamkkebu.transactionservice.data.entity.Transaction;
 import com.hamkkebu.transactionservice.data.entity.enums.TransactionType;
 import com.hamkkebu.transactionservice.data.mapper.TransactionMapper;
+import com.hamkkebu.transactionservice.kafka.producer.TransactionEventProducer;
 import com.hamkkebu.transactionservice.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +37,7 @@ public class TransactionService {
 
     private final TransactionRepository transactionRepository;
     private final TransactionMapper transactionMapper;
+    private final TransactionEventProducer transactionEventProducer;
 
     @Transactional
     public TransactionResponse createTransaction(TransactionRequest request, Long userId) {
@@ -46,6 +48,9 @@ public class TransactionService {
 
         Transaction savedTransaction = transactionRepository.save(transaction);
         log.info("Created transaction with id {}", savedTransaction.getId());
+
+        // Kafka 이벤트 발행
+        transactionEventProducer.publishTransactionCreated(savedTransaction);
 
         return transactionMapper.toResponse(savedTransaction);
     }
@@ -83,6 +88,9 @@ public class TransactionService {
         transactionMapper.updateEntity(request, transaction);
         Transaction updatedTransaction = transactionRepository.save(transaction);
 
+        // Kafka 이벤트 발행
+        transactionEventProducer.publishTransactionUpdated(updatedTransaction);
+
         log.info("Updated transaction {}", id);
         return transactionMapper.toResponse(updatedTransaction);
     }
@@ -96,6 +104,9 @@ public class TransactionService {
 
         transaction.delete();
         transactionRepository.save(transaction);
+
+        // Kafka 이벤트 발행
+        transactionEventProducer.publishTransactionDeleted(transaction);
 
         log.info("Deleted transaction {}", id);
     }
