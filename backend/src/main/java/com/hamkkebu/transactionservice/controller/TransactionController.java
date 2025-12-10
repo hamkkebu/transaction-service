@@ -5,7 +5,7 @@ import com.hamkkebu.transactionservice.data.dto.PeriodTransactionSummary;
 import com.hamkkebu.transactionservice.data.dto.TransactionRequest;
 import com.hamkkebu.transactionservice.data.dto.TransactionResponse;
 import com.hamkkebu.transactionservice.data.dto.TransactionSummary;
-import com.hamkkebu.transactionservice.security.CurrentUser;
+import com.hamkkebu.boilerplate.common.user.annotation.CurrentUser;
 import com.hamkkebu.transactionservice.service.TransactionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

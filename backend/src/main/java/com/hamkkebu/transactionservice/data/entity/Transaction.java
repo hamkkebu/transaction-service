@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "tbl_transaction", indexes = {
+@Table(name = "tbl_transactions", indexes = {
     @Index(name = "idx_ledger_id", columnList = "ledger_id"),
     @Index(name = "idx_user_id", columnList = "user_id"),
     @Index(name = "idx_transaction_date", columnList = "transaction_date")

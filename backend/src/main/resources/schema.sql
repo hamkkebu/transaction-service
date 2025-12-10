@@ -1,8 +1,40 @@
 -- Transaction Service Schema
 
+-- ==========================================
+-- 사용자 테이블 (Auth Service에서 동기화)
+-- ==========================================
+DROP TABLE IF EXISTS tbl_users;
+CREATE TABLE tbl_users (
+    user_id BIGINT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    nickname VARCHAR(50),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    role VARCHAR(20) NOT NULL DEFAULT 'USER',
+
+    -- Auditing Fields (from BaseEntity)
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by VARCHAR(50),
+    updated_by VARCHAR(50),
+
+    -- Soft Delete Fields (from BaseEntity)
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    deleted_at DATETIME,
+
+    INDEX idx_username (username),
+    INDEX idx_email (email),
+    INDEX idx_is_deleted (is_deleted)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Auth Service에서 동기화된 사용자 정보';
+
+-- ==========================================
 -- 거래 테이블
-DROP TABLE IF EXISTS tbl_transaction;
-CREATE TABLE tbl_transaction (
+-- ==========================================
+DROP TABLE IF EXISTS tbl_transactions;
+CREATE TABLE tbl_transactions (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     ledger_id BIGINT NOT NULL,
     user_id BIGINT NOT NULL,
