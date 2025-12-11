@@ -5,7 +5,8 @@ metadata:
   namespace: hamkkebu
   labels:
     app: transaction-service-backend
-    version: v1
+    service: transaction-service
+    component: backend
 spec:
   replicas: 1
   selector:
@@ -15,44 +16,19 @@ spec:
     metadata:
       labels:
         app: transaction-service-backend
-        version: v1
+        service: transaction-service
+        component: backend
     spec:
       imagePullSecrets:
         - name: ecr-registry-secret
       containers:
-        - name: transaction-service-backend
-          image: IMAGE_PLACEHOLDER
+        - name: backend
+          image: PLACEHOLDER_IMAGE
           ports:
-            - name: http
-              containerPort: 8083
-              protocol: TCP
-            - name: grpc
-              containerPort: 9094
-              protocol: TCP
-          envFrom:
-            - configMapRef:
-                name: transaction-service-backend-config
-          env:
-            - name: SPRING_DATASOURCE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: hamkkebu-db-secret
-                  key: jdbc-url
-            - name: SPRING_DATASOURCE_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: hamkkebu-db-secret
-                  key: username
-            - name: SPRING_DATASOURCE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: hamkkebu-db-secret
-                  key: password
-            - name: JWT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: hamkkebu-jwt-secret
-                  key: secret
+            - containerPort: 8080
+              name: http
+            - containerPort: 9090
+              name: grpc
           resources:
             requests:
               memory: "128Mi"
@@ -60,20 +36,41 @@ spec:
             limits:
               memory: "256Mi"
               cpu: "250m"
+          env:
+            - name: JAVA_OPTS
+              value: "-Xms64m -Xmx128m -XX:+UseG1GC -XX:MaxGCPauseMillis=100"
+            - name: SPRING_PROFILES_ACTIVE
+              value: "dev"
+            - name: DB_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: transaction-service-config
+                  key: DB_URL
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: transaction-service-secrets
+                  key: DB_USERNAME
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: transaction-service-secrets
+                  key: DB_PASSWORD
+            - name: GRPC_SERVER_PORT
+              value: "9090"
           livenessProbe:
             httpGet:
               path: /actuator/health
-              port: 8083
+              port: 8080
             initialDelaySeconds: 60
-            periodSeconds: 30
+            periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
           readinessProbe:
             httpGet:
               path: /actuator/health
-              port: 8083
+              port: 8080
             initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
             failureThreshold: 3
-      terminationGracePeriodSeconds: 30

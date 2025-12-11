@@ -5,20 +5,23 @@ metadata:
   namespace: hamkkebu
   labels:
     app: transaction-service-backend
+    service: transaction-service
+    component: backend
 spec:
   type: ClusterIP
-  selector:
-    app: transaction-service-backend
   ports:
     - name: http
       port: 8083
-      targetPort: 8083
+      targetPort: 8080
       protocol: TCP
     - name: grpc
-      port: 9094
-      targetPort: 9094
+      port: 9093
+      targetPort: 9090
       protocol: TCP
+  selector:
+    app: transaction-service-backend
 ---
+# NodePort for external access (dev only)
 apiVersion: v1
 kind: Service
 metadata:
@@ -26,13 +29,15 @@ metadata:
   namespace: hamkkebu
   labels:
     app: transaction-service-backend
+    service: transaction-service
+    component: backend
 spec:
   type: NodePort
-  selector:
-    app: transaction-service-backend
   ports:
     - name: http
       port: 8083
-      targetPort: 8083
-      nodePort: 31083
+      targetPort: 8080
+      nodePort: 30083
       protocol: TCP
+  selector:
+    app: transaction-service-backend
