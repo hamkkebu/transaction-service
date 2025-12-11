@@ -53,19 +53,6 @@ spring:
         # SECURITY: "*" 사용 시 Insecure Deserialization 취약점 발생
         spring.json.trusted.packages: "com.hamkkebu.transactionservice.*,com.hamkkebu.boilerplate.*"
 
-  # Redis 설정
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
-      timeout: ${REDIS_TIMEOUT:2000ms}
-      lettuce:
-        pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 0
-
 # Kafka 토픽 설정
 kafka:
   topics:
@@ -129,10 +116,6 @@ management:
   endpoint:
     health:
       show-details: always
-  health:
-    redis:
-      enabled: false
-
 # 로깅 설정
 logging:
   level:
