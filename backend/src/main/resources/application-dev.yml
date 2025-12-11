@@ -12,8 +12,8 @@ spring:
   datasource:
     # Transaction Service는 3309 포트 사용 (Auth: 3307, Ledger: 3308)
     url: jdbc:mysql://localhost:3309/hamkkebu_transaction?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8
-    username: root
-    password: root
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
