@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transaction-service-backend
+  namespace: hamkkebu
+  labels:
+    app: transaction-service-backend
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: transaction-service-backend
+  template:
+    metadata:
+      labels:
+        app: transaction-service-backend
+        version: v1
+    spec:
+      imagePullSecrets:
+        - name: ecr-registry-secret
+      containers:
+        - name: transaction-service-backend
+          image: IMAGE_PLACEHOLDER
+          ports:
+            - name: http
+              containerPort: 8083
+              protocol: TCP
+            - name: grpc
+              containerPort: 9094
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: transaction-service-backend-config
+          env:
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: hamkkebu-db-secret
+                  key: jdbc-url
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: hamkkebu-db-secret
+                  key: username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: hamkkebu-db-secret
+                  key: password
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: hamkkebu-jwt-secret
+                  key: secret
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8083
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8083
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+      terminationGracePeriodSeconds: 30

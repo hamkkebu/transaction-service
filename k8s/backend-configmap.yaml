@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: transaction-service-backend-config
+  namespace: hamkkebu
+data:
+  SPRING_PROFILES_ACTIVE: "prod"
+  SERVER_PORT: "8083"
+  GRPC_SERVER_PORT: "9094"
+  AUTH_SERVICE_GRPC_ADDRESS: "auth-service-backend:9091"
+  LEDGER_SERVICE_GRPC_ADDRESS: "ledger-service-backend:9093"
+  JAVA_OPTS: "-Xms64m -Xmx128m -XX:+UseG1GC -XX:MaxGCPauseMillis=100"
