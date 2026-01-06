@@ -2,6 +2,8 @@ import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 import UserInfo from '@/components/views/UserInfo.vue';
 import LeaveUser from '@/components/views/LeaveUser.vue';
 import AdminDashboard from '@/components/views/AdminDashboard.vue';
+import TransactionList from '@/components/views/TransactionList.vue';
+import TransactionForm from '@/components/views/TransactionForm.vue';
 import { ROUTES } from '@/constants';
 import type { UserRole } from '@/types/domain.types';
 import { useAuth } from '@/composables/useAuth';
@@ -18,12 +20,13 @@ const routes: RouteRecordRaw[] = [
         if (userRole === 'ADMIN' || userRole === 'DEVELOPER') {
           return ROUTES.ADMIN_DASHBOARD;
         } else {
-          return ROUTES.USER_INFO;
+          // 일반 사용자는 거래 목록으로 리다이렉트
+          return ROUTES.TRANSACTIONS;
         }
       }
 
-      // 로그인 안되어 있으면 사용자 정보 페이지로 (initAuth에서 로그인 리다이렉트)
-      return ROUTES.USER_INFO;
+      // 로그인 안되어 있으면 거래 목록 페이지로 (initAuth에서 로그인 리다이렉트)
+      return ROUTES.TRANSACTIONS;
     },
   },
   {
@@ -46,6 +49,31 @@ const routes: RouteRecordRaw[] = [
       requiresAuth: true,
       requiredRoles: ['ADMIN', 'DEVELOPER'] as UserRole[]
     },
+  },
+  // 거래 관련 라우트
+  {
+    path: ROUTES.TRANSACTIONS,
+    name: 'TransactionList',
+    component: TransactionList,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: ROUTES.TRANSACTION_CREATE,
+    name: 'TransactionCreate',
+    component: TransactionForm,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/transactions/:id',
+    name: 'TransactionDetail',
+    component: TransactionForm,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/transactions/:id/edit',
+    name: 'TransactionEdit',
+    component: TransactionForm,
+    meta: { requiresAuth: true },
   },
   // 기존 로그인/회원가입 경로 -> 홈으로 리다이렉트 (Keycloak이 처리)
   {

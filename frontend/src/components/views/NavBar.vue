@@ -10,12 +10,25 @@
               <path d="M2 12l10 5 10-5"></path>
             </svg>
           </div>
-          <span class="brand-name">Auth Service</span>
+          <span class="brand-name">Transaction Service</span>
         </router-link>
       </div>
 
       <div class="navbar-menu" :class="{ 'is-active': menuActive }">
         <div class="navbar-start">
+          <router-link
+            v-if="isAuthenticated"
+            :to="ROUTES.TRANSACTIONS"
+            class="navbar-item"
+            @click="closeMenu"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="1" x2="12" y2="23"></line>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+            </svg>
+            거래 내역
+          </router-link>
+
           <button
             v-if="!isAuthenticated"
             class="navbar-item"

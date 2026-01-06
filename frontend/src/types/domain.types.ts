@@ -115,3 +115,90 @@ export interface UserStatsResponse {
   adminUsers: number;
   developerUsers: number;
 }
+
+/**
+ * 거래 유형
+ */
+export type TransactionType = 'INCOME' | 'EXPENSE';
+
+/**
+ * 거래 엔티티
+ */
+export interface Transaction {
+  id: number;
+  ledgerId: number;
+  userId: number;
+  type: TransactionType;
+  amount: number;
+  description: string;
+  category: string;
+  transactionDate: string;
+  memo?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * 거래 생성 요청 DTO
+ */
+export interface TransactionRequest {
+  ledgerId: number;
+  type: TransactionType;
+  amount: number;
+  description: string;
+  category: string;
+  transactionDate: string;
+  memo?: string;
+}
+
+/**
+ * 거래 요약 정보
+ */
+export interface TransactionSummary {
+  ledgerId: number;
+  totalIncome: number;
+  totalExpense: number;
+  balance: number;
+  transactionCount: number;
+}
+
+/**
+ * 기간별 거래 요약
+ */
+export interface PeriodTransactionSummary {
+  ledgerId: number;
+  periodType: 'DAILY' | 'MONTHLY' | 'YEARLY';
+  startDate: string;
+  endDate: string;
+  totalIncome: number;
+  totalExpense: number;
+  balance: number;
+  transactionCount: number;
+  transactions: Transaction[];
+  periodDetails?: PeriodDetail[];
+}
+
+/**
+ * 기간 상세 정보
+ */
+export interface PeriodDetail {
+  periodLabel: string;
+  startDate: string;
+  endDate: string;
+  income: number;
+  expense: number;
+  balance: number;
+  transactionCount: number;
+}
+
+/**
+ * 카테고리 엔티티
+ */
+export interface Category {
+  categoryId: number;
+  ledgerId: number;
+  name: string;
+  color: string;
+  createdAt: string;
+  updatedAt: string;
+}

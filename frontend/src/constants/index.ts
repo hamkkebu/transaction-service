@@ -1,12 +1,12 @@
 /**
- * 애플리케이션 상수 정의 - Auth Service
+ * 애플리케이션 상수 정의 - Transaction Service
  */
 
 /**
  * API 엔드포인트
  */
 export const API_ENDPOINTS = {
-  // User 관련
+  // User 관련 (Auth Service)
   USERS: '/api/v1/users',
   USER_BY_ID: (id: string) => `/api/v1/users/${id}`,
   USER_BY_USERNAME: (username: string) => `/api/v1/users/username/${username}`,
@@ -20,6 +20,19 @@ export const API_ENDPOINTS = {
     USER_ACTIVE: (username: string) => `/api/v1/admin/users/${username}/active`,
     DELETED_USERS: '/api/v1/admin/users/deleted',
     STATS: '/api/v1/admin/users/stats',
+  },
+
+  // 거래 관련
+  TRANSACTIONS: {
+    BASE: '/api/v1/transactions',
+    BY_ID: (id: number) => `/api/v1/transactions/${id}`,
+    BY_LEDGER: (ledgerId: number) => `/api/v1/transactions/ledger/${ledgerId}`,
+    ALL_BY_LEDGER: (ledgerId: number) => `/api/v1/transactions/ledger/${ledgerId}/all`,
+    SUMMARY: (ledgerId: number) => `/api/v1/transactions/ledger/${ledgerId}/summary`,
+    DAILY: (ledgerId: number, date: string) => `/api/v1/transactions/ledger/${ledgerId}/daily?date=${date}`,
+    MONTHLY: (ledgerId: number, year: number, month: number) => `/api/v1/transactions/ledger/${ledgerId}/monthly?year=${year}&month=${month}`,
+    YEARLY: (ledgerId: number, year: number) => `/api/v1/transactions/ledger/${ledgerId}/yearly?year=${year}`,
+    PERIOD: (ledgerId: number, startDate: string, endDate: string) => `/api/v1/transactions/ledger/${ledgerId}/period?startDate=${startDate}&endDate=${endDate}`,
   },
 } as const;
 
@@ -35,6 +48,12 @@ export const ROUTES = {
   LEAVE_USER: '/leaveuser',
   ADMIN_DASHBOARD: '/admin',
   NOT_FOUND: '/404',
+  // 거래 관련 라우트
+  TRANSACTIONS: '/transactions',
+  TRANSACTION_CREATE: '/transactions/create',
+  TRANSACTION_DETAIL: (id: number | string) => `/transactions/${id}`,
+  TRANSACTION_EDIT: (id: number | string) => `/transactions/${id}/edit`,
+  STATISTICS: '/statistics',
 } as const;
 
 /**
