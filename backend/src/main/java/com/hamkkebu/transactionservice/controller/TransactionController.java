@@ -47,62 +47,68 @@ public class TransactionController {
     @GetMapping("/{id}")
     @Operation(summary = "거래 상세 조회", description = "특정 거래의 상세 정보를 조회합니다")
     public ResponseEntity<ApiResponse<TransactionResponse>> getTransaction(
+            @Parameter(hidden = true) @CurrentUser Long userId,
             @PathVariable Long id) {
 
-        log.info("GET /api/v1/transactions/{}", id);
-        TransactionResponse transaction = transactionService.getTransaction(id);
+        log.info("GET /api/v1/transactions/{} - userId: {}", id, userId);
+        TransactionResponse transaction = transactionService.getTransaction(id, userId);
         return ResponseEntity.ok(ApiResponse.success(transaction));
     }
 
     @GetMapping
     @Operation(summary = "거래 목록 조회 (페이징)", description = "특정 가계부의 거래 목록을 페이징으로 조회합니다")
     public ResponseEntity<ApiResponse<Page<TransactionResponse>>> getTransactions(
+            @Parameter(hidden = true) @CurrentUser Long userId,
             @RequestParam Long ledgerId,
             @PageableDefault(size = 20) Pageable pageable) {
 
-        log.info("GET /api/v1/transactions?ledgerId={}", ledgerId);
-        Page<TransactionResponse> transactions = transactionService.getTransactionsByLedger(ledgerId, pageable);
+        log.info("GET /api/v1/transactions?ledgerId={} - userId: {}", ledgerId, userId);
+        Page<TransactionResponse> transactions = transactionService.getTransactionsByLedger(ledgerId, userId, pageable);
         return ResponseEntity.ok(ApiResponse.success(transactions));
     }
 
     @GetMapping("/all")
     @Operation(summary = "거래 전체 목록 조회", description = "특정 가계부의 모든 거래를 조회합니다")
     public ResponseEntity<ApiResponse<List<TransactionResponse>>> getAllTransactions(
+            @Parameter(hidden = true) @CurrentUser Long userId,
             @RequestParam Long ledgerId) {
 
-        log.info("GET /api/v1/transactions/all?ledgerId={}", ledgerId);
-        List<TransactionResponse> transactions = transactionService.getAllTransactionsByLedger(ledgerId);
+        log.info("GET /api/v1/transactions/all?ledgerId={} - userId: {}", ledgerId, userId);
+        List<TransactionResponse> transactions = transactionService.getAllTransactionsByLedger(ledgerId, userId);
         return ResponseEntity.ok(ApiResponse.success(transactions));
     }
 
     @GetMapping("/summary")
     @Operation(summary = "거래 요약 조회", description = "특정 가계부의 거래 요약 정보를 조회합니다")
     public ResponseEntity<ApiResponse<TransactionSummary>> getTransactionSummary(
+            @Parameter(hidden = true) @CurrentUser Long userId,
             @RequestParam Long ledgerId) {
 
-        log.info("GET /api/v1/transactions/summary?ledgerId={}", ledgerId);
-        TransactionSummary summary = transactionService.getSummaryByLedger(ledgerId);
+        log.info("GET /api/v1/transactions/summary?ledgerId={} - userId: {}", ledgerId, userId);
+        TransactionSummary summary = transactionService.getSummaryByLedger(ledgerId, userId);
         return ResponseEntity.ok(ApiResponse.success(summary));
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "거래 수정", description = "거래 정보를 수정합니다")
     public ResponseEntity<ApiResponse<TransactionResponse>> updateTransaction(
+            @Parameter(hidden = true) @CurrentUser Long userId,
             @PathVariable Long id,
             @Valid @RequestBody TransactionRequest request) {
 
-        log.info("PUT /api/v1/transactions/{}", id);
-        TransactionResponse transaction = transactionService.updateTransaction(id, request);
+        log.info("PUT /api/v1/transactions/{} - userId: {}", id, userId);
+        TransactionResponse transaction = transactionService.updateTransaction(id, request, userId);
         return ResponseEntity.ok(ApiResponse.success(transaction));
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "거래 삭제", description = "거래를 삭제합니다")
     public ResponseEntity<ApiResponse<Void>> deleteTransaction(
+            @Parameter(hidden = true) @CurrentUser Long userId,
             @PathVariable Long id) {
 
-        log.info("DELETE /api/v1/transactions/{}", id);
-        transactionService.deleteTransaction(id);
+        log.info("DELETE /api/v1/transactions/{} - userId: {}", id, userId);
+        transactionService.deleteTransaction(id, userId);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
@@ -111,46 +117,50 @@ public class TransactionController {
     @GetMapping("/daily")
     @Operation(summary = "일별 거래 요약 조회", description = "특정 날짜의 거래 요약을 조회합니다")
     public ResponseEntity<ApiResponse<PeriodTransactionSummary>> getDailySummary(
+            @Parameter(hidden = true) @CurrentUser Long userId,
             @RequestParam Long ledgerId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
 
-        log.info("GET /api/v1/transactions/daily?ledgerId={}&date={}", ledgerId, date);
-        PeriodTransactionSummary summary = transactionService.getDailySummary(ledgerId, date);
+        log.info("GET /api/v1/transactions/daily?ledgerId={}&date={} - userId: {}", ledgerId, date, userId);
+        PeriodTransactionSummary summary = transactionService.getDailySummary(ledgerId, date, userId);
         return ResponseEntity.ok(ApiResponse.success(summary));
     }
 
     @GetMapping("/monthly")
     @Operation(summary = "월별 거래 요약 조회", description = "특정 월의 거래 요약을 조회합니다 (일별 상세 포함)")
     public ResponseEntity<ApiResponse<PeriodTransactionSummary>> getMonthlySummary(
+            @Parameter(hidden = true) @CurrentUser Long userId,
             @RequestParam Long ledgerId,
             @RequestParam int year,
             @RequestParam int month) {
 
-        log.info("GET /api/v1/transactions/monthly?ledgerId={}&year={}&month={}", ledgerId, year, month);
-        PeriodTransactionSummary summary = transactionService.getMonthlySummary(ledgerId, year, month);
+        log.info("GET /api/v1/transactions/monthly?ledgerId={}&year={}&month={} - userId: {}", ledgerId, year, month, userId);
+        PeriodTransactionSummary summary = transactionService.getMonthlySummary(ledgerId, year, month, userId);
         return ResponseEntity.ok(ApiResponse.success(summary));
     }
 
     @GetMapping("/yearly")
     @Operation(summary = "년별 거래 요약 조회", description = "특정 연도의 거래 요약을 조회합니다 (월별 상세 포함)")
     public ResponseEntity<ApiResponse<PeriodTransactionSummary>> getYearlySummary(
+            @Parameter(hidden = true) @CurrentUser Long userId,
             @RequestParam Long ledgerId,
             @RequestParam int year) {
 
-        log.info("GET /api/v1/transactions/yearly?ledgerId={}&year={}", ledgerId, year);
-        PeriodTransactionSummary summary = transactionService.getYearlySummary(ledgerId, year);
+        log.info("GET /api/v1/transactions/yearly?ledgerId={}&year={} - userId: {}", ledgerId, year, userId);
+        PeriodTransactionSummary summary = transactionService.getYearlySummary(ledgerId, year, userId);
         return ResponseEntity.ok(ApiResponse.success(summary));
     }
 
     @GetMapping("/period")
     @Operation(summary = "기간별 거래 요약 조회", description = "지정한 기간의 거래 요약을 조회합니다")
     public ResponseEntity<ApiResponse<PeriodTransactionSummary>> getPeriodSummary(
+            @Parameter(hidden = true) @CurrentUser Long userId,
             @RequestParam Long ledgerId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
 
-        log.info("GET /api/v1/transactions/period?ledgerId={}&startDate={}&endDate={}", ledgerId, startDate, endDate);
-        PeriodTransactionSummary summary = transactionService.getPeriodSummary(ledgerId, startDate, endDate);
+        log.info("GET /api/v1/transactions/period?ledgerId={}&startDate={}&endDate={} - userId: {}", ledgerId, startDate, endDate, userId);
+        PeriodTransactionSummary summary = transactionService.getPeriodSummary(ledgerId, startDate, endDate, userId);
         return ResponseEntity.ok(ApiResponse.success(summary));
     }
 }

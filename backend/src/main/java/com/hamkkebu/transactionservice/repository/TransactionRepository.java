@@ -26,6 +26,9 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     // 특정 거래 조회 (삭제되지 않은 것만)
     Optional<Transaction> findByIdAndIsDeletedFalse(Long id);
 
+    // 특정 거래 조회 (삭제되지 않은 것만, 사용자 검증 포함)
+    Optional<Transaction> findByIdAndUserIdAndIsDeletedFalse(Long id, Long userId);
+
     // 특정 가계부의 총 수입 계산
     @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t " +
            "WHERE t.ledgerId = :ledgerId AND t.type = :type AND t.isDeleted = false")
@@ -65,4 +68,11 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
             @Param("ledgerId") Long ledgerId,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
+
+    // 가계부와 사용자별 접근 권한 확인
+    boolean existsByLedgerIdAndUserIdAndIsDeletedFalse(Long ledgerId, Long userId);
+
+    // 가계부와 사용자별 거래 수 계산
+    @Query("SELECT COUNT(t) FROM Transaction t WHERE t.ledgerId = :ledgerId AND t.userId = :userId AND t.isDeleted = false")
+    Long countByLedgerIdAndUserId(@Param("ledgerId") Long ledgerId, @Param("userId") Long userId);
 }

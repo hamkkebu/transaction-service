@@ -56,33 +56,36 @@ public class TransactionService {
     }
 
     @Transactional(readOnly = true)
-    public TransactionResponse getTransaction(Long id) {
-        Transaction transaction = transactionRepository.findByIdAndIsDeletedFalse(id)
+    public TransactionResponse getTransaction(Long id, Long userId) {
+        Transaction transaction = transactionRepository.findByIdAndUserIdAndIsDeletedFalse(id, userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TRANSACTION_NOT_FOUND));
+
         return transactionMapper.toResponse(transaction);
     }
 
     @Transactional(readOnly = true)
-    public Page<TransactionResponse> getTransactionsByLedger(Long ledgerId, Pageable pageable) {
-        log.info("Fetching transactions for ledger {}", ledgerId);
+    public Page<TransactionResponse> getTransactionsByLedger(Long ledgerId, Long userId, Pageable pageable) {
+        log.info("Fetching transactions for ledger {} by user {}", ledgerId, userId);
+        validateLedgerAccess(ledgerId, userId);
         Page<Transaction> transactions = transactionRepository
                 .findByLedgerIdAndIsDeletedFalseOrderByTransactionDateDescIdDesc(ledgerId, pageable);
         return transactions.map(transactionMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<TransactionResponse> getAllTransactionsByLedger(Long ledgerId) {
-        log.info("Fetching all transactions for ledger {}", ledgerId);
+    public List<TransactionResponse> getAllTransactionsByLedger(Long ledgerId, Long userId) {
+        log.info("Fetching all transactions for ledger {} by user {}", ledgerId, userId);
+        validateLedgerAccess(ledgerId, userId);
         List<Transaction> transactions = transactionRepository
                 .findByLedgerIdAndIsDeletedFalseOrderByTransactionDateDescIdDesc(ledgerId);
         return transactionMapper.toResponseList(transactions);
     }
 
     @Transactional
-    public TransactionResponse updateTransaction(Long id, TransactionRequest request) {
-        log.info("Updating transaction {}", id);
+    public TransactionResponse updateTransaction(Long id, TransactionRequest request, Long userId) {
+        log.info("Updating transaction {} by user {}", id, userId);
 
-        Transaction transaction = transactionRepository.findByIdAndIsDeletedFalse(id)
+        Transaction transaction = transactionRepository.findByIdAndUserIdAndIsDeletedFalse(id, userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TRANSACTION_NOT_FOUND));
 
         transactionMapper.updateEntity(request, transaction);
@@ -96,10 +99,10 @@ public class TransactionService {
     }
 
     @Transactional
-    public void deleteTransaction(Long id) {
-        log.info("Deleting transaction {}", id);
+    public void deleteTransaction(Long id, Long userId) {
+        log.info("Deleting transaction {} by user {}", id, userId);
 
-        Transaction transaction = transactionRepository.findByIdAndIsDeletedFalse(id)
+        Transaction transaction = transactionRepository.findByIdAndUserIdAndIsDeletedFalse(id, userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TRANSACTION_NOT_FOUND));
 
         transaction.delete();
@@ -112,8 +115,9 @@ public class TransactionService {
     }
 
     @Transactional(readOnly = true)
-    public TransactionSummary getSummaryByLedger(Long ledgerId) {
-        log.info("Calculating summary for ledger {}", ledgerId);
+    public TransactionSummary getSummaryByLedger(Long ledgerId, Long userId) {
+        log.info("Calculating summary for ledger {} by user {}", ledgerId, userId);
+        validateLedgerAccess(ledgerId, userId);
 
         BigDecimal totalIncome = transactionRepository.sumAmountByLedgerIdAndType(ledgerId, TransactionType.INCOME);
         BigDecimal totalExpense = transactionRepository.sumAmountByLedgerIdAndType(ledgerId, TransactionType.EXPENSE);
@@ -134,11 +138,13 @@ public class TransactionService {
      * 일별 거래 요약 조회
      * @param ledgerId 가계부 ID
      * @param date 조회할 날짜
+     * @param userId 사용자 ID
      * @return 일별 거래 요약
      */
     @Transactional(readOnly = true)
-    public PeriodTransactionSummary getDailySummary(Long ledgerId, LocalDate date) {
-        log.info("Fetching daily summary for ledger {} on {}", ledgerId, date);
+    public PeriodTransactionSummary getDailySummary(Long ledgerId, LocalDate date, Long userId) {
+        log.info("Fetching daily summary for ledger {} on {} by user {}", ledgerId, date, userId);
+        validateLedgerAccess(ledgerId, userId);
 
         LocalDate startDate = date;
         LocalDate endDate = date;
@@ -151,11 +157,13 @@ public class TransactionService {
      * @param ledgerId 가계부 ID
      * @param year 연도
      * @param month 월
+     * @param userId 사용자 ID
      * @return 월별 거래 요약 (일별 상세 포함)
      */
     @Transactional(readOnly = true)
-    public PeriodTransactionSummary getMonthlySummary(Long ledgerId, int year, int month) {
-        log.info("Fetching monthly summary for ledger {} on {}-{}", ledgerId, year, month);
+    public PeriodTransactionSummary getMonthlySummary(Long ledgerId, int year, int month, Long userId) {
+        log.info("Fetching monthly summary for ledger {} on {}-{} by user {}", ledgerId, year, month, userId);
+        validateLedgerAccess(ledgerId, userId);
 
         YearMonth yearMonth = YearMonth.of(year, month);
         LocalDate startDate = yearMonth.atDay(1);
@@ -174,11 +182,13 @@ public class TransactionService {
      * 년별 거래 요약 조회
      * @param ledgerId 가계부 ID
      * @param year 연도
+     * @param userId 사용자 ID
      * @return 년별 거래 요약 (월별 상세 포함)
      */
     @Transactional(readOnly = true)
-    public PeriodTransactionSummary getYearlySummary(Long ledgerId, int year) {
-        log.info("Fetching yearly summary for ledger {} on {}", ledgerId, year);
+    public PeriodTransactionSummary getYearlySummary(Long ledgerId, int year, Long userId) {
+        log.info("Fetching yearly summary for ledger {} on {} by user {}", ledgerId, year, userId);
+        validateLedgerAccess(ledgerId, userId);
 
         LocalDate startDate = LocalDate.of(year, 1, 1);
         LocalDate endDate = LocalDate.of(year, 12, 31);
@@ -197,11 +207,13 @@ public class TransactionService {
      * @param ledgerId 가계부 ID
      * @param startDate 시작일
      * @param endDate 종료일
+     * @param userId 사용자 ID
      * @return 기간별 거래 요약
      */
     @Transactional(readOnly = true)
-    public PeriodTransactionSummary getPeriodSummary(Long ledgerId, LocalDate startDate, LocalDate endDate) {
-        log.info("Fetching period summary for ledger {} from {} to {}", ledgerId, startDate, endDate);
+    public PeriodTransactionSummary getPeriodSummary(Long ledgerId, LocalDate startDate, LocalDate endDate, Long userId) {
+        log.info("Fetching period summary for ledger {} from {} to {} by user {}", ledgerId, startDate, endDate, userId);
+        validateLedgerAccess(ledgerId, userId);
 
         return buildPeriodSummary(ledgerId, PeriodType.DAILY, startDate, endDate);
     }
@@ -210,8 +222,9 @@ public class TransactionService {
      * 기간별 거래 목록 조회
      */
     @Transactional(readOnly = true)
-    public List<TransactionResponse> getTransactionsByPeriod(Long ledgerId, LocalDate startDate, LocalDate endDate) {
-        log.info("Fetching transactions for ledger {} from {} to {}", ledgerId, startDate, endDate);
+    public List<TransactionResponse> getTransactionsByPeriod(Long ledgerId, LocalDate startDate, LocalDate endDate, Long userId) {
+        log.info("Fetching transactions for ledger {} from {} to {} by user {}", ledgerId, startDate, endDate, userId);
+        validateLedgerAccess(ledgerId, userId);
 
         List<Transaction> transactions = transactionRepository
                 .findByLedgerIdAndTransactionDateBetweenAndIsDeletedFalseOrderByTransactionDateDescIdDesc(
@@ -328,5 +341,27 @@ public class TransactionService {
         }
 
         return details;
+    }
+
+    /**
+     * 가계부 접근 권한 검증 (해당 가계부에 거래가 있는 사용자인지 확인)
+     * 가계부에 해당 사용자의 거래가 있거나, 새로운 거래 생성 시에는 허용
+     */
+    private void validateLedgerAccess(Long ledgerId, Long userId) {
+        // 해당 가계부에 해당 사용자의 거래가 있는지 확인
+        boolean hasAccess = transactionRepository.existsByLedgerIdAndUserIdAndIsDeletedFalse(ledgerId, userId);
+        // 아직 거래가 없는 경우에도 접근 허용 (새 가계부의 경우)
+        // 실제로는 ledger-service와 gRPC 통신으로 가계부 소유권을 검증해야 함
+        // 현재는 거래가 존재하면 그 사용자의 것인지만 확인
+        if (!hasAccess) {
+            // 거래가 없는 경우는 허용 (새로운 가계부에 거래 추가 가능)
+            Long existingCount = transactionRepository.countByLedgerIdAndUserId(ledgerId, userId);
+            Long totalCount = transactionRepository.countByLedgerId(ledgerId);
+            // 다른 사용자의 거래가 있으면 접근 거부
+            if (totalCount > 0 && existingCount == 0) {
+                log.warn("User {} attempted to access ledger {} without permission", userId, ledgerId);
+                throw new BusinessException(ErrorCode.LEDGER_ACCESS_DENIED);
+            }
+        }
     }
 }

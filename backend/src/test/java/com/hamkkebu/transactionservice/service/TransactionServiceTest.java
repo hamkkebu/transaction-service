@@ -123,33 +123,35 @@ class TransactionServiceTest {
     @DisplayName("거래 조회 성공")
     void getTransaction_Success() {
         // Given
-        when(transactionRepository.findByIdAndIsDeletedFalse(1L)).thenReturn(Optional.of(savedTransaction));
+        Long userId = 1L;
+        when(transactionRepository.findByIdAndUserIdAndIsDeletedFalse(1L, userId)).thenReturn(Optional.of(savedTransaction));
         when(transactionMapper.toResponse(savedTransaction)).thenReturn(transactionResponse);
 
         // When
-        TransactionResponse result = transactionService.getTransaction(1L);
+        TransactionResponse result = transactionService.getTransaction(1L, userId);
 
         // Then
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo(1L);
 
-        verify(transactionRepository).findByIdAndIsDeletedFalse(1L);
+        verify(transactionRepository).findByIdAndUserIdAndIsDeletedFalse(1L, userId);
         verify(transactionMapper).toResponse(savedTransaction);
     }
 
     @Test
-    @DisplayName("거래 조회 실패 - 존재하지 않는 거래")
-    void getTransaction_NotFound() {
+    @DisplayName("거래 조회 실패 - 존재하지 않는 거래 또는 권한 없음")
+    void getTransaction_NotFoundOrAccessDenied() {
         // Given
-        when(transactionRepository.findByIdAndIsDeletedFalse(999L)).thenReturn(Optional.empty());
+        Long userId = 1L;
+        when(transactionRepository.findByIdAndUserIdAndIsDeletedFalse(999L, userId)).thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> transactionService.getTransaction(999L))
+        assertThatThrownBy(() -> transactionService.getTransaction(999L, userId))
                 .isInstanceOf(BusinessException.class)
                 .extracting(ex -> ((BusinessException) ex).getErrorCode())
                 .isEqualTo(ErrorCode.TRANSACTION_NOT_FOUND);
 
-        verify(transactionRepository).findByIdAndIsDeletedFalse(999L);
+        verify(transactionRepository).findByIdAndUserIdAndIsDeletedFalse(999L, userId);
         verify(transactionMapper, never()).toResponse(any());
     }
 
@@ -158,16 +160,18 @@ class TransactionServiceTest {
     void getTransactionsByLedger_Success() {
         // Given
         Long ledgerId = 1L;
+        Long userId = 1L;
         Pageable pageable = PageRequest.of(0, 20);
         List<Transaction> transactions = List.of(savedTransaction);
         Page<Transaction> transactionPage = new PageImpl<>(transactions, pageable, 1);
 
+        when(transactionRepository.existsByLedgerIdAndUserIdAndIsDeletedFalse(ledgerId, userId)).thenReturn(true);
         when(transactionRepository.findByLedgerIdAndIsDeletedFalseOrderByTransactionDateDescIdDesc(ledgerId, pageable))
                 .thenReturn(transactionPage);
         when(transactionMapper.toResponse(savedTransaction)).thenReturn(transactionResponse);
 
         // When
-        Page<TransactionResponse> result = transactionService.getTransactionsByLedger(ledgerId, pageable);
+        Page<TransactionResponse> result = transactionService.getTransactionsByLedger(ledgerId, userId, pageable);
 
         // Then
         assertThat(result).isNotNull();
@@ -182,6 +186,7 @@ class TransactionServiceTest {
     @DisplayName("거래 수정 성공")
     void updateTransaction_Success() {
         // Given
+        Long userId = 1L;
         TransactionRequest updateRequest = TransactionRequest.builder()
                 .ledgerId(1L)
                 .type(TransactionType.EXPENSE)
@@ -192,37 +197,38 @@ class TransactionServiceTest {
                 .memo("회식")
                 .build();
 
-        when(transactionRepository.findByIdAndIsDeletedFalse(1L)).thenReturn(Optional.of(savedTransaction));
+        when(transactionRepository.findByIdAndUserIdAndIsDeletedFalse(1L, userId)).thenReturn(Optional.of(savedTransaction));
         doNothing().when(transactionMapper).updateEntity(updateRequest, savedTransaction);
         when(transactionRepository.save(savedTransaction)).thenReturn(savedTransaction);
         when(transactionMapper.toResponse(savedTransaction)).thenReturn(transactionResponse);
         doNothing().when(transactionEventProducer).publishTransactionUpdated(any(Transaction.class));
 
         // When
-        TransactionResponse result = transactionService.updateTransaction(1L, updateRequest);
+        TransactionResponse result = transactionService.updateTransaction(1L, updateRequest, userId);
 
         // Then
         assertThat(result).isNotNull();
 
-        verify(transactionRepository).findByIdAndIsDeletedFalse(1L);
+        verify(transactionRepository).findByIdAndUserIdAndIsDeletedFalse(1L, userId);
         verify(transactionMapper).updateEntity(updateRequest, savedTransaction);
         verify(transactionRepository).save(savedTransaction);
         verify(transactionEventProducer).publishTransactionUpdated(savedTransaction);
     }
 
     @Test
-    @DisplayName("거래 수정 실패 - 존재하지 않는 거래")
-    void updateTransaction_NotFound() {
+    @DisplayName("거래 수정 실패 - 존재하지 않는 거래 또는 권한 없음")
+    void updateTransaction_NotFoundOrAccessDenied() {
         // Given
-        when(transactionRepository.findByIdAndIsDeletedFalse(999L)).thenReturn(Optional.empty());
+        Long userId = 1L;
+        when(transactionRepository.findByIdAndUserIdAndIsDeletedFalse(999L, userId)).thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> transactionService.updateTransaction(999L, validRequest))
+        assertThatThrownBy(() -> transactionService.updateTransaction(999L, validRequest, userId))
                 .isInstanceOf(BusinessException.class)
                 .extracting(ex -> ((BusinessException) ex).getErrorCode())
                 .isEqualTo(ErrorCode.TRANSACTION_NOT_FOUND);
 
-        verify(transactionRepository).findByIdAndIsDeletedFalse(999L);
+        verify(transactionRepository).findByIdAndUserIdAndIsDeletedFalse(999L, userId);
         verify(transactionRepository, never()).save(any());
     }
 
@@ -230,32 +236,34 @@ class TransactionServiceTest {
     @DisplayName("거래 삭제 성공")
     void deleteTransaction_Success() {
         // Given
-        when(transactionRepository.findByIdAndIsDeletedFalse(1L)).thenReturn(Optional.of(savedTransaction));
+        Long userId = 1L;
+        when(transactionRepository.findByIdAndUserIdAndIsDeletedFalse(1L, userId)).thenReturn(Optional.of(savedTransaction));
         when(transactionRepository.save(savedTransaction)).thenReturn(savedTransaction);
         doNothing().when(transactionEventProducer).publishTransactionDeleted(any(Transaction.class));
 
         // When
-        transactionService.deleteTransaction(1L);
+        transactionService.deleteTransaction(1L, userId);
 
         // Then
-        verify(transactionRepository).findByIdAndIsDeletedFalse(1L);
+        verify(transactionRepository).findByIdAndUserIdAndIsDeletedFalse(1L, userId);
         verify(transactionRepository).save(savedTransaction);
         verify(transactionEventProducer).publishTransactionDeleted(savedTransaction);
     }
 
     @Test
-    @DisplayName("거래 삭제 실패 - 존재하지 않는 거래")
-    void deleteTransaction_NotFound() {
+    @DisplayName("거래 삭제 실패 - 존재하지 않는 거래 또는 권한 없음")
+    void deleteTransaction_NotFoundOrAccessDenied() {
         // Given
-        when(transactionRepository.findByIdAndIsDeletedFalse(999L)).thenReturn(Optional.empty());
+        Long userId = 1L;
+        when(transactionRepository.findByIdAndUserIdAndIsDeletedFalse(999L, userId)).thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> transactionService.deleteTransaction(999L))
+        assertThatThrownBy(() -> transactionService.deleteTransaction(999L, userId))
                 .isInstanceOf(BusinessException.class)
                 .extracting(ex -> ((BusinessException) ex).getErrorCode())
                 .isEqualTo(ErrorCode.TRANSACTION_NOT_FOUND);
 
-        verify(transactionRepository).findByIdAndIsDeletedFalse(999L);
+        verify(transactionRepository).findByIdAndUserIdAndIsDeletedFalse(999L, userId);
         verify(transactionRepository, never()).save(any());
     }
 
@@ -264,10 +272,12 @@ class TransactionServiceTest {
     void getSummaryByLedger_Success() {
         // Given
         Long ledgerId = 1L;
+        Long userId = 1L;
         BigDecimal totalIncome = BigDecimal.valueOf(1000000);
         BigDecimal totalExpense = BigDecimal.valueOf(500000);
         Long transactionCount = 10L;
 
+        when(transactionRepository.existsByLedgerIdAndUserIdAndIsDeletedFalse(ledgerId, userId)).thenReturn(true);
         when(transactionRepository.sumAmountByLedgerIdAndType(ledgerId, TransactionType.INCOME))
                 .thenReturn(totalIncome);
         when(transactionRepository.sumAmountByLedgerIdAndType(ledgerId, TransactionType.EXPENSE))
@@ -275,7 +285,7 @@ class TransactionServiceTest {
         when(transactionRepository.countByLedgerId(ledgerId)).thenReturn(transactionCount);
 
         // When
-        TransactionSummary result = transactionService.getSummaryByLedger(ledgerId);
+        TransactionSummary result = transactionService.getSummaryByLedger(ledgerId, userId);
 
         // Then
         assertThat(result).isNotNull();
@@ -295,15 +305,19 @@ class TransactionServiceTest {
     void getSummaryByLedger_NoTransactions() {
         // Given
         Long ledgerId = 1L;
+        Long userId = 1L;
 
+        // 거래가 없는 경우 - 새로운 가계부
+        when(transactionRepository.existsByLedgerIdAndUserIdAndIsDeletedFalse(ledgerId, userId)).thenReturn(false);
+        when(transactionRepository.countByLedgerIdAndUserId(ledgerId, userId)).thenReturn(0L);
+        when(transactionRepository.countByLedgerId(ledgerId)).thenReturn(0L);
         when(transactionRepository.sumAmountByLedgerIdAndType(ledgerId, TransactionType.INCOME))
                 .thenReturn(BigDecimal.ZERO);
         when(transactionRepository.sumAmountByLedgerIdAndType(ledgerId, TransactionType.EXPENSE))
                 .thenReturn(BigDecimal.ZERO);
-        when(transactionRepository.countByLedgerId(ledgerId)).thenReturn(0L);
 
         // When
-        TransactionSummary result = transactionService.getSummaryByLedger(ledgerId);
+        TransactionSummary result = transactionService.getSummaryByLedger(ledgerId, userId);
 
         // Then
         assertThat(result).isNotNull();
@@ -318,15 +332,17 @@ class TransactionServiceTest {
     void getAllTransactionsByLedger_Success() {
         // Given
         Long ledgerId = 1L;
+        Long userId = 1L;
         List<Transaction> transactions = List.of(savedTransaction);
         List<TransactionResponse> responses = List.of(transactionResponse);
 
+        when(transactionRepository.existsByLedgerIdAndUserIdAndIsDeletedFalse(ledgerId, userId)).thenReturn(true);
         when(transactionRepository.findByLedgerIdAndIsDeletedFalseOrderByTransactionDateDescIdDesc(ledgerId))
                 .thenReturn(transactions);
         when(transactionMapper.toResponseList(transactions)).thenReturn(responses);
 
         // When
-        List<TransactionResponse> result = transactionService.getAllTransactionsByLedger(ledgerId);
+        List<TransactionResponse> result = transactionService.getAllTransactionsByLedger(ledgerId, userId);
 
         // Then
         assertThat(result).isNotNull();
@@ -335,5 +351,24 @@ class TransactionServiceTest {
 
         verify(transactionRepository).findByLedgerIdAndIsDeletedFalseOrderByTransactionDateDescIdDesc(ledgerId);
         verify(transactionMapper).toResponseList(transactions);
+    }
+
+    @Test
+    @DisplayName("가계부 접근 실패 - 다른 사용자의 가계부")
+    void getLedgerAccess_Denied() {
+        // Given
+        Long ledgerId = 1L;
+        Long userId = 2L; // 다른 사용자
+        Pageable pageable = PageRequest.of(0, 20);
+
+        when(transactionRepository.existsByLedgerIdAndUserIdAndIsDeletedFalse(ledgerId, userId)).thenReturn(false);
+        when(transactionRepository.countByLedgerIdAndUserId(ledgerId, userId)).thenReturn(0L);
+        when(transactionRepository.countByLedgerId(ledgerId)).thenReturn(5L); // 다른 사용자의 거래가 있음
+
+        // When & Then
+        assertThatThrownBy(() -> transactionService.getTransactionsByLedger(ledgerId, userId, pageable))
+                .isInstanceOf(BusinessException.class)
+                .extracting(ex -> ((BusinessException) ex).getErrorCode())
+                .isEqualTo(ErrorCode.LEDGER_ACCESS_DENIED);
     }
 }
