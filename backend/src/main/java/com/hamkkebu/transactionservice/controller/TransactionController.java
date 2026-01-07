@@ -1,6 +1,7 @@
 package com.hamkkebu.transactionservice.controller;
 
 import com.hamkkebu.boilerplate.common.dto.ApiResponse;
+import com.hamkkebu.boilerplate.common.dto.PageResponseDto;
 import com.hamkkebu.transactionservice.data.dto.PeriodTransactionSummary;
 import com.hamkkebu.transactionservice.data.dto.TransactionRequest;
 import com.hamkkebu.transactionservice.data.dto.TransactionResponse;
@@ -57,14 +58,14 @@ public class TransactionController {
 
     @GetMapping
     @Operation(summary = "거래 목록 조회 (페이징)", description = "특정 가계부의 거래 목록을 페이징으로 조회합니다")
-    public ResponseEntity<ApiResponse<Page<TransactionResponse>>> getTransactions(
+    public ResponseEntity<ApiResponse<PageResponseDto<TransactionResponse>>> getTransactions(
             @Parameter(hidden = true) @CurrentUser Long userId,
             @RequestParam Long ledgerId,
             @PageableDefault(size = 20) Pageable pageable) {
 
         log.info("GET /api/v1/transactions?ledgerId={} - userId: {}", ledgerId, userId);
         Page<TransactionResponse> transactions = transactionService.getTransactionsByLedger(ledgerId, userId, pageable);
-        return ResponseEntity.ok(ApiResponse.success(transactions));
+        return ResponseEntity.ok(ApiResponse.success(PageResponseDto.of(transactions)));
     }
 
     @GetMapping("/all")
