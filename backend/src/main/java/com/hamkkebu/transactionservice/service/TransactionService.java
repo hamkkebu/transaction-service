@@ -71,7 +71,7 @@ public class TransactionService {
 
     @Transactional(readOnly = true)
     public Page<TransactionResponse> getTransactionsByLedger(Long ledgerId, Long userId, Pageable pageable) {
-        log.info("Fetching transactions for ledger {} by user {}", ledgerId, userId);
+        log.debug("Fetching transactions for ledger {} by user {}", ledgerId, userId);
         validateLedgerAccess(ledgerId, userId);
         Page<Transaction> transactions = transactionRepository
                 .findByLedgerIdAndIsDeletedFalseOrderByTransactionDateDescIdDesc(ledgerId, pageable);
@@ -80,7 +80,7 @@ public class TransactionService {
 
     @Transactional(readOnly = true)
     public List<TransactionResponse> getAllTransactionsByLedger(Long ledgerId, Long userId) {
-        log.info("Fetching all transactions for ledger {} by user {}", ledgerId, userId);
+        log.debug("Fetching all transactions for ledger {} by user {}", ledgerId, userId);
         validateLedgerAccess(ledgerId, userId);
         List<Transaction> transactions = transactionRepository
                 .findByLedgerIdAndIsDeletedFalseOrderByTransactionDateDescIdDesc(ledgerId);
@@ -89,7 +89,7 @@ public class TransactionService {
 
     @Transactional
     public TransactionResponse updateTransaction(Long id, TransactionRequest request, Long userId) {
-        log.info("Updating transaction {} by user {}", id, userId);
+        log.debug("Updating transaction {} by user {}", id, userId);
 
         Transaction transaction = transactionRepository.findByIdAndUserIdAndIsDeletedFalse(id, userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TRANSACTION_NOT_FOUND));
@@ -106,7 +106,7 @@ public class TransactionService {
 
     @Transactional
     public void deleteTransaction(Long id, Long userId) {
-        log.info("Deleting transaction {} by user {}", id, userId);
+        log.debug("Deleting transaction {} by user {}", id, userId);
 
         Transaction transaction = transactionRepository.findByIdAndUserIdAndIsDeletedFalse(id, userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TRANSACTION_NOT_FOUND));
@@ -122,7 +122,7 @@ public class TransactionService {
 
     @Transactional(readOnly = true)
     public TransactionSummary getSummaryByLedger(Long ledgerId, Long userId) {
-        log.info("Calculating summary for ledger {} by user {}", ledgerId, userId);
+        log.debug("Calculating summary for ledger {} by user {}", ledgerId, userId);
         validateLedgerAccess(ledgerId, userId);
 
         BigDecimal totalIncome = BigDecimalUtils.nullToZero(
@@ -151,26 +151,18 @@ public class TransactionService {
      */
     @Transactional(readOnly = true)
     public PeriodTransactionSummary getDailySummary(Long ledgerId, LocalDate date, Long userId) {
-        log.info("Fetching daily summary for ledger {} on {} by user {}", ledgerId, date, userId);
+        log.debug("Fetching daily summary for ledger {} on {} by user {}", ledgerId, date, userId);
         validateLedgerAccess(ledgerId, userId);
 
-        LocalDate startDate = date;
-        LocalDate endDate = date;
-
-        return buildPeriodSummary(ledgerId, PeriodType.DAILY, startDate, endDate);
+        return buildPeriodSummary(ledgerId, PeriodType.DAILY, date, date);
     }
 
     /**
      * 월별 거래 요약 조회
-     * @param ledgerId 가계부 ID
-     * @param year 연도
-     * @param month 월
-     * @param userId 사용자 ID
-     * @return 월별 거래 요약 (일별 상세 포함)
      */
     @Transactional(readOnly = true)
     public PeriodTransactionSummary getMonthlySummary(Long ledgerId, int year, int month, Long userId) {
-        log.info("Fetching monthly summary for ledger {} on {}-{} by user {}", ledgerId, year, month, userId);
+        log.debug("Fetching monthly summary for ledger {} on {}-{} by user {}", ledgerId, year, month, userId);
         validateLedgerAccess(ledgerId, userId);
 
         YearMonth yearMonth = YearMonth.of(year, month);
@@ -178,49 +170,34 @@ public class TransactionService {
         LocalDate endDate = yearMonth.atEndOfMonth();
 
         PeriodTransactionSummary summary = buildPeriodSummary(ledgerId, PeriodType.MONTHLY, startDate, endDate);
-
-        // 일별 상세 요약 추가
-        List<PeriodDetail> dailyDetails = buildDailyDetails(ledgerId, startDate, endDate);
-        summary.setPeriodDetails(dailyDetails);
+        summary.setPeriodDetails(buildDailyDetails(ledgerId, startDate, endDate));
 
         return summary;
     }
 
     /**
      * 년별 거래 요약 조회
-     * @param ledgerId 가계부 ID
-     * @param year 연도
-     * @param userId 사용자 ID
-     * @return 년별 거래 요약 (월별 상세 포함)
      */
     @Transactional(readOnly = true)
     public PeriodTransactionSummary getYearlySummary(Long ledgerId, int year, Long userId) {
-        log.info("Fetching yearly summary for ledger {} on {} by user {}", ledgerId, year, userId);
+        log.debug("Fetching yearly summary for ledger {} on {} by user {}", ledgerId, year, userId);
         validateLedgerAccess(ledgerId, userId);
 
         LocalDate startDate = LocalDate.of(year, 1, 1);
         LocalDate endDate = LocalDate.of(year, 12, 31);
 
         PeriodTransactionSummary summary = buildPeriodSummary(ledgerId, PeriodType.YEARLY, startDate, endDate);
-
-        // 월별 상세 요약 추가
-        List<PeriodDetail> monthlyDetails = buildMonthlyDetails(ledgerId, year);
-        summary.setPeriodDetails(monthlyDetails);
+        summary.setPeriodDetails(buildMonthlyDetails(ledgerId, year));
 
         return summary;
     }
 
     /**
      * 기간별 거래 요약 조회 (커스텀 기간)
-     * @param ledgerId 가계부 ID
-     * @param startDate 시작일
-     * @param endDate 종료일
-     * @param userId 사용자 ID
-     * @return 기간별 거래 요약
      */
     @Transactional(readOnly = true)
     public PeriodTransactionSummary getPeriodSummary(Long ledgerId, LocalDate startDate, LocalDate endDate, Long userId) {
-        log.info("Fetching period summary for ledger {} from {} to {} by user {}", ledgerId, startDate, endDate, userId);
+        log.debug("Fetching period summary for ledger {} from {} to {} by user {}", ledgerId, startDate, endDate, userId);
         validateLedgerAccess(ledgerId, userId);
 
         return buildPeriodSummary(ledgerId, PeriodType.DAILY, startDate, endDate);
@@ -231,7 +208,7 @@ public class TransactionService {
      */
     @Transactional(readOnly = true)
     public List<TransactionResponse> getTransactionsByPeriod(Long ledgerId, LocalDate startDate, LocalDate endDate, Long userId) {
-        log.info("Fetching transactions for ledger {} from {} to {} by user {}", ledgerId, startDate, endDate, userId);
+        log.debug("Fetching transactions for ledger {} from {} to {} by user {}", ledgerId, startDate, endDate, userId);
         validateLedgerAccess(ledgerId, userId);
 
         List<Transaction> transactions = transactionRepository
@@ -280,42 +257,41 @@ public class TransactionService {
                 .findByLedgerIdAndTransactionDateBetweenAndIsDeletedFalseOrderByTransactionDateDescIdDesc(
                         ledgerId, startDate, endDate);
 
-        // 날짜별로 그룹핑
         Map<LocalDate, List<Transaction>> groupedByDate = transactions.stream()
                 .collect(Collectors.groupingBy(Transaction::getTransactionDate));
 
-        List<PeriodDetail> details = new ArrayList<>();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        return groupedByDate.entrySet().stream()
+                .map(entry -> buildPeriodDetailFromTransactions(entry.getKey(), entry.getValue()))
+                .sorted((a, b) -> b.getStartDate().compareTo(a.getStartDate()))
+                .toList();
+    }
 
-        // 시작일부터 종료일까지 모든 날짜에 대해 요약 생성
-        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
-            List<Transaction> dayTransactions = groupedByDate.getOrDefault(date, List.of());
+    /**
+     * 거래 목록으로부터 PeriodDetail 생성
+     */
+    private PeriodDetail buildPeriodDetailFromTransactions(LocalDate date, List<Transaction> transactions) {
+        BigDecimal income = calculateAmountByType(transactions, TransactionType.INCOME);
+        BigDecimal expense = calculateAmountByType(transactions, TransactionType.EXPENSE);
 
-            BigDecimal income = dayTransactions.stream()
-                    .filter(t -> t.getType() == TransactionType.INCOME)
-                    .map(Transaction::getAmount)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return PeriodDetail.builder()
+                .periodLabel(date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+                .startDate(date)
+                .endDate(date)
+                .income(income)
+                .expense(expense)
+                .balance(BigDecimalUtils.calculateBalance(income, expense))
+                .transactionCount((long) transactions.size())
+                .build();
+    }
 
-            BigDecimal expense = dayTransactions.stream()
-                    .filter(t -> t.getType() == TransactionType.EXPENSE)
-                    .map(Transaction::getAmount)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            // 거래가 있는 날만 포함
-            if (!dayTransactions.isEmpty()) {
-                details.add(PeriodDetail.builder()
-                        .periodLabel(date.format(formatter))
-                        .startDate(date)
-                        .endDate(date)
-                        .income(income)
-                        .expense(expense)
-                        .balance(income.subtract(expense))
-                        .transactionCount((long) dayTransactions.size())
-                        .build());
-            }
-        }
-
-        return details;
+    /**
+     * 거래 유형별 금액 합계 계산
+     */
+    private BigDecimal calculateAmountByType(List<Transaction> transactions, TransactionType type) {
+        return transactions.stream()
+                .filter(t -> t.getType() == type)
+                .map(Transaction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     /**
