@@ -62,6 +62,39 @@ CREATE TABLE tbl_transactions (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ==========================================
+-- 가계부 공유 테이블 (Ledger Service에서 동기화)
+-- ==========================================
+DROP TABLE IF EXISTS tbl_ledger_shares;
+CREATE TABLE tbl_ledger_shares (
+    ledger_share_id BIGINT PRIMARY KEY,
+    ledger_id BIGINT NOT NULL,
+    owner_id BIGINT NOT NULL,
+    shared_user_id BIGINT NOT NULL,
+    status ENUM('PENDING', 'ACCEPTED', 'REJECTED') NOT NULL DEFAULT 'PENDING',
+    permission VARCHAR(20) NOT NULL DEFAULT 'READ_ONLY',
+    shared_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    accepted_at DATETIME,
+    rejection_reason VARCHAR(500),
+
+    -- Auditing Fields (from BaseEntity)
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by VARCHAR(50),
+    updated_by VARCHAR(50),
+
+    -- Soft Delete Fields (from BaseEntity)
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    deleted_at DATETIME,
+
+    INDEX idx_ledger_id (ledger_id),
+    INDEX idx_owner_id (owner_id),
+    INDEX idx_shared_user_id (shared_user_id),
+    INDEX idx_status (status),
+    INDEX idx_is_deleted (is_deleted)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Ledger Service에서 동기화된 가계부 공유 정보';
+
+-- ==========================================
 -- Transactional Outbox 테이블
 -- ==========================================
 DROP TABLE IF EXISTS tbl_outbox_event;

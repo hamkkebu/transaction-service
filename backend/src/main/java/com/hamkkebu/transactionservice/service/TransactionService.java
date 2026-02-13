@@ -1,5 +1,6 @@
 package com.hamkkebu.transactionservice.service;
 
+import com.hamkkebu.boilerplate.common.enums.ShareStatus;
 import com.hamkkebu.boilerplate.common.exception.BusinessException;
 import com.hamkkebu.boilerplate.common.exception.ErrorCode;
 import com.hamkkebu.boilerplate.common.util.BigDecimalUtils;
@@ -14,6 +15,7 @@ import com.hamkkebu.transactionservice.data.entity.enums.TransactionType;
 import com.hamkkebu.transactionservice.data.mapper.TransactionMapper;
 import com.hamkkebu.transactionservice.kafka.producer.TransactionEventProducer;
 import com.hamkkebu.transactionservice.repository.LedgerRepository;
+import com.hamkkebu.transactionservice.repository.LedgerShareRepository;
 import com.hamkkebu.transactionservice.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +41,7 @@ public class TransactionService {
 
     private final TransactionRepository transactionRepository;
     private final LedgerRepository ledgerRepository;
+    private final LedgerShareRepository ledgerShareRepository;
     private final TransactionMapper transactionMapper;
     private final TransactionEventProducer transactionEventProducer;
 
@@ -355,31 +358,33 @@ public class TransactionService {
     }
 
     /**
-     * 가계부 접근 권한 검증 (기존 거래 목록 조회용)
+     * 가계부 접근 권한 검증 (거래 목록/통계 조회용)
      *
-     * <p>해당 가계부에 사용자의 거래가 있거나, 동기화된 가계부 정보로 소유권이 확인되면 접근 허용</p>
+     * <p>다음 조건 중 하나라도 만족하면 접근 허용:</p>
+     * <ul>
+     *   <li>동기화된 가계부 정보로 소유권 확인</li>
+     *   <li>공유받은 가계부 (ACCEPTED 상태)</li>
+     * </ul>
      */
     private void validateLedgerAccess(Long ledgerId, Long userId) {
-        // 먼저 동기화된 가계부 정보로 소유권 확인
+        // 1. 동기화된 가계부 정보로 소유권 확인
         if (ledgerRepository.existsByLedgerIdAndUserIdAndIsDeletedFalse(ledgerId, userId)) {
-            return; // 소유권 확인됨
+            return;
         }
 
-        // 동기화된 가계부 정보가 없는 경우 (아직 동기화되지 않은 경우)
-        // 기존 로직: 해당 가계부에 해당 사용자의 거래가 있는지 확인
-        boolean hasAccess = transactionRepository.existsByLedgerIdAndUserIdAndIsDeletedFalse(ledgerId, userId);
-        if (!hasAccess) {
-            Long totalCount = transactionRepository.countByLedgerId(ledgerId);
-            if (totalCount > 0) {
-                // 다른 사용자의 거래가 있으면 접근 거부
-                log.warn("User {} attempted to access ledger {} without permission", userId, ledgerId);
-                throw new BusinessException(ErrorCode.LEDGER_ACCESS_DENIED);
-            }
-            // 거래가 없고 가계부 정보도 없으면 가계부 미존재
-            if (!ledgerRepository.existsByLedgerIdAndIsDeletedFalse(ledgerId)) {
-                log.warn("Ledger {} not found or not synced yet", ledgerId);
-                throw new BusinessException(ErrorCode.LEDGER_NOT_FOUND);
-            }
+        // 2. 공유받은 가계부인지 확인 (ACCEPTED 상태)
+        if (ledgerShareRepository.existsByLedgerIdAndSharedUserIdAndStatusAndIsDeletedFalse(
+                ledgerId, userId, ShareStatus.ACCEPTED)) {
+            log.debug("User {} accessing shared ledger {}", userId, ledgerId);
+            return;
         }
+
+        // 접근 권한 없음: 가계부 존재 여부에 따라 에러 분기
+        if (!ledgerRepository.existsByLedgerIdAndIsDeletedFalse(ledgerId)) {
+            log.warn("Ledger {} not found", ledgerId);
+            throw new BusinessException(ErrorCode.LEDGER_NOT_FOUND);
+        }
+        log.warn("User {} attempted to access ledger {} without permission", userId, ledgerId);
+        throw new BusinessException(ErrorCode.LEDGER_ACCESS_DENIED);
     }
 }
