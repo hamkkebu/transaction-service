@@ -45,6 +45,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://database:3306/${DB_NAME:-hamkkebu_transaction}?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      JWT_SECRET: ${JWT_SECRET}
       # 공유 인프라 네트워크의 Kafka에 연결 (컨테이너 이름 사용)
       KAFKA_BOOTSTRAP_SERVERS: hamkkebu-boilerplate-kafka:29092
       # Auth Service gRPC 연결
