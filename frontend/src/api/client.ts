@@ -23,7 +23,7 @@ export function setTokenProvider(provider: () => Promise<string | null>): void {
  * Axios 인스턴스 생성
  */
 const apiClient: AxiosInstance = axios.create({
-  baseURL: process.env.VUE_APP_baseApiURL || '',
+  baseURL: '',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -134,7 +134,7 @@ function handleTokenExpired(): void {
   }
   isHandlingExpiredSession = true;
   alert('세션이 만료되었습니다. 다시 로그인해주세요.');
-  window.location.href = '/login';
+  window.location.href = window.location.origin;
 }
 
 /**

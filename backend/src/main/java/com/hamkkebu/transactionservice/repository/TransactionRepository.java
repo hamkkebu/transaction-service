@@ -75,4 +75,24 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     // 가계부와 사용자별 거래 수 계산
     @Query("SELECT COUNT(t) FROM Transaction t WHERE t.ledgerId = :ledgerId AND t.userId = :userId AND t.isDeleted = false")
     Long countByLedgerIdAndUserId(@Param("ledgerId") Long ledgerId, @Param("userId") Long userId);
+
+    // ==================== Codef 연동 관련 ====================
+
+    // 승인번호로 거래 조회 (중복 체크 및 업데이트 매칭용)
+    Optional<Transaction> findByExternalApprovalNoAndLinkedCardIdAndIsDeletedFalse(
+            String externalApprovalNo, Long linkedCardId);
+
+    // 특정 연동 카드의 거래 목록 조회
+    List<Transaction> findByLinkedCardIdAndIsDeletedFalse(Long linkedCardId);
+
+    // 특정 연동 카드의 거래 일괄 soft delete
+    @Query("UPDATE Transaction t SET t.isDeleted = true, t.deletedAt = CURRENT_TIMESTAMP " +
+           "WHERE t.linkedCardId = :linkedCardId AND t.isDeleted = false")
+    @org.springframework.data.jpa.repository.Modifying
+    int softDeleteByLinkedCardId(@Param("linkedCardId") Long linkedCardId);
+
+    // hard delete 대상 거래 조회 (삭제된 지 cutoff일 지난 연동 카드 거래)
+    @Query("DELETE FROM Transaction t WHERE t.linkedCardId = :linkedCardId AND t.isDeleted = true")
+    @org.springframework.data.jpa.repository.Modifying
+    int hardDeleteByLinkedCardId(@Param("linkedCardId") Long linkedCardId);
 }

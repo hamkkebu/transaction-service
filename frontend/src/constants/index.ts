@@ -22,17 +22,32 @@ export const API_ENDPOINTS = {
     STATS: '/api/v1/admin/users/stats',
   },
 
-  // 거래 관련
+  // 가계부 관련 (Kafka 동기화 데이터)
+  LEDGERS: '/api/v1/ledgers',
+
+  // 거래 관련 (백엔드는 query parameter로 ledgerId를 받음)
   TRANSACTIONS: {
     BASE: '/api/v1/transactions',
     BY_ID: (id: number) => `/api/v1/transactions/${id}`,
-    BY_LEDGER: (ledgerId: number) => `/api/v1/transactions/ledger/${ledgerId}`,
-    ALL_BY_LEDGER: (ledgerId: number) => `/api/v1/transactions/ledger/${ledgerId}/all`,
-    SUMMARY: (ledgerId: number) => `/api/v1/transactions/ledger/${ledgerId}/summary`,
-    DAILY: (ledgerId: number, date: string) => `/api/v1/transactions/ledger/${ledgerId}/daily?date=${date}`,
-    MONTHLY: (ledgerId: number, year: number, month: number) => `/api/v1/transactions/ledger/${ledgerId}/monthly?year=${year}&month=${month}`,
-    YEARLY: (ledgerId: number, year: number) => `/api/v1/transactions/ledger/${ledgerId}/yearly?year=${year}`,
-    PERIOD: (ledgerId: number, startDate: string, endDate: string) => `/api/v1/transactions/ledger/${ledgerId}/period?startDate=${startDate}&endDate=${endDate}`,
+    ALL: '/api/v1/transactions/all',
+    SUMMARY: '/api/v1/transactions/summary',
+    DAILY: '/api/v1/transactions/daily',
+    MONTHLY: '/api/v1/transactions/monthly',
+    YEARLY: '/api/v1/transactions/yearly',
+    PERIOD: '/api/v1/transactions/period',
+  },
+
+  // 카드 연동 관련
+  CARDS: {
+    BASE: '/api/v1/cards',
+    CONNECT: '/api/v1/cards/connect',
+    CONNECT_SIMPLE_AUTH: '/api/v1/cards/connect/simple-auth',
+    CONNECT_ADD: (connectedId: string) => `/api/v1/cards/connect/${connectedId}`,
+    LIST: '/api/v1/cards/list',
+    LINK: '/api/v1/cards/link',
+    BY_LEDGER: (ledgerId: number) => `/api/v1/cards/ledger/${ledgerId}`,
+    UNLINK: (linkedCardId: number) => `/api/v1/cards/${linkedCardId}`,
+    SYNC: (linkedCardId: number) => `/api/v1/cards/${linkedCardId}/sync`,
   },
 } as const;
 
@@ -54,6 +69,8 @@ export const ROUTES = {
   TRANSACTION_DETAIL: (id: number | string) => `/transactions/${id}`,
   TRANSACTION_EDIT: (id: number | string) => `/transactions/${id}/edit`,
   STATISTICS: '/statistics',
+  // 카드 연동 관련 라우트
+  CARDS: '/cards',
 } as const;
 
 /**

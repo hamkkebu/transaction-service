@@ -11,6 +11,7 @@ import com.hamkkebu.transactionservice.data.dto.TransactionRequest;
 import com.hamkkebu.transactionservice.data.dto.TransactionResponse;
 import com.hamkkebu.transactionservice.data.dto.TransactionSummary;
 import com.hamkkebu.transactionservice.data.entity.Transaction;
+import com.hamkkebu.transactionservice.data.entity.enums.TransactionSourceType;
 import com.hamkkebu.transactionservice.data.entity.enums.TransactionType;
 import com.hamkkebu.transactionservice.data.mapper.TransactionMapper;
 import com.hamkkebu.transactionservice.kafka.producer.TransactionEventProducer;
@@ -54,6 +55,7 @@ public class TransactionService {
 
         Transaction transaction = transactionMapper.toEntity(request);
         transaction.setUserId(userId);
+        transaction.setSourceType(TransactionSourceType.MANUAL);
 
         Transaction savedTransaction = transactionRepository.save(transaction);
         log.info("Created transaction with id {}", savedTransaction.getId());

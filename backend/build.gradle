@@ -60,6 +60,9 @@ dependencies {
 	// Redis
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
+	// Codef API (카드사 연동)
+	implementation 'io.codef.api:easycodef-java:1.0.6'
+
 	// .env 파일 로드 (로컬 개발용)
 	implementation 'me.paulschwarz:spring-dotenv:4.0.0'
 

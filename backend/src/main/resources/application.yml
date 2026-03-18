@@ -61,6 +61,11 @@ kafka:
     ledger-share-events: ledger-share.events
     transaction-events: transaction.events
 
+# Spring Security OAuth2 Resource Server 설정 (Keycloak 연동)
+spring.security.oauth2.resourceserver.jwt:
+  issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/hamkkebu}
+  jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8180/realms/hamkkebu/protocol/openid-connect/certs}
+
 # gRPC 설정 (내부 서비스 간 통신)
 grpc:
   server:
@@ -118,6 +123,15 @@ management:
   endpoint:
     health:
       show-details: always
+# Codef API 설정
+codef:
+  demo-client-id: ${CODEF_DEMO_CLIENT_ID:}
+  demo-client-secret: ${CODEF_DEMO_CLIENT_SECRET:}
+  client-id: ${CODEF_CLIENT_ID:}
+  client-secret: ${CODEF_CLIENT_SECRET:}
+  public-key: ${CODEF_PUBLIC_KEY:}
+  service-type: ${CODEF_SERVICE_TYPE:DEMO}
+
 # 로깅 설정
 logging:
   level:

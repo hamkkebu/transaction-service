@@ -14,6 +14,9 @@ public interface TransactionMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "userId", ignore = true)
+    @Mapping(target = "sourceType", ignore = true)
+    @Mapping(target = "externalApprovalNo", ignore = true)
+    @Mapping(target = "linkedCardId", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
@@ -28,6 +31,9 @@ public interface TransactionMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "userId", ignore = true)
+    @Mapping(target = "sourceType", ignore = true)
+    @Mapping(target = "externalApprovalNo", ignore = true)
+    @Mapping(target = "linkedCardId", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)

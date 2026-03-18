@@ -3,120 +3,6 @@
  */
 
 /**
- * Sample/User 엔티티
- */
-export interface Sample {
-  id: number;
-  username: string;
-  firstName: string;
-  lastName: string;
-  nickname?: string;
-  email?: string;
-  phone?: string;
-  country?: string;
-  city?: string;
-  state?: string;
-  street1?: string;
-  street2?: string;
-  zip?: string;
-}
-
-/**
- * Sample 생성 요청 DTO
- *
- * ⚠️ IMPORTANT: Backend에서 email, phone, nickname은 REQUIRED입니다.
- * Optional fields: country, city, state, street1, street2, zip
- */
-export interface CreateSampleRequest {
-  username: string;
-  firstName: string;
-  lastName: string;
-  password: string;
-  nickname: string;  // REQUIRED - Backend validation
-  email: string;      // REQUIRED - Backend validation
-  phone: string;      // REQUIRED - Backend validation
-  country?: string;
-  city?: string;
-  state?: string;
-  street1?: string;
-  street2?: string;
-  zip?: string;
-}
-
-/**
- * 사용자 권한 타입
- */
-export type UserRole = 'USER' | 'ADMIN' | 'DEVELOPER';
-
-/**
- * 인증 관련 타입
- */
-export interface AuthUser {
-  id?: number;
-  username: string;
-  firstName: string;
-  lastName: string;
-  email?: string;
-  role?: UserRole;
-  isActive?: boolean;
-  isVerified?: boolean;
-}
-
-export interface LoginRequest {
-  username: string;
-  password: string;
-}
-
-export interface TokenResponse {
-  accessToken: string;
-  refreshToken: string;
-  tokenType: string;
-  expiresIn: number;
-}
-
-/**
- * 로그인 응답 DTO
- *
- * Backend는 항상 모든 필드를 반환합니다.
- * nullable 가능하지만 필드 자체는 항상 존재합니다.
- */
-export interface LoginResponse {
-  username: string;
-  firstName: string;
-  lastName: string;
-  nickname: string | null;  // Backend always returns (may be null)
-  email: string | null;      // Backend always returns (may be null)
-  role: UserRole;            // 사용자 권한
-  token: TokenResponse;
-}
-
-/**
- * 관리자 API 관련 타입
- */
-export interface UserResponse {
-  userId: number;
-  username: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber?: string;
-  isActive: boolean;
-  isVerified: boolean;
-  role: UserRole;
-  lastLoginAt?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface UserStatsResponse {
-  totalUsers: number;
-  activeUsers: number;
-  deletedUsers: number;
-  adminUsers: number;
-  developerUsers: number;
-}
-
-/**
  * 거래 유형
  */
 export type TransactionType = 'INCOME' | 'EXPENSE';
@@ -202,3 +88,84 @@ export interface Category {
   createdAt: string;
   updatedAt: string;
 }
+
+// ==================== Codef 카드 연동 관련 ====================
+
+/**
+ * 카드사 계정 등록 요청
+ */
+export interface CodefAccountRequest {
+  organization: string;
+  loginType?: string;        // "1" = ID/PW (기본), "5" = 간편인증
+  loginTypeLevel?: string;   // 간편인증 수단 (1~8)
+  loginId?: string;
+  loginPw?: string;
+}
+
+/**
+ * Codef에서 조회된 카드 정보
+ */
+export interface CodefCardInfo {
+  cardId: string;
+  cardName: string;
+  cardNoMasked: string;
+  organization: string;
+  organizationName: string;
+}
+
+/**
+ * 카드 연동 요청
+ */
+export interface LinkCardRequest {
+  ledgerId: number;
+  connectedId: string;
+  organization: string;
+  cardId: string;
+  cardName: string;
+  cardNoMasked?: string;
+}
+
+/**
+ * 연동된 카드 응답
+ */
+export interface LinkedCardResponse {
+  linkedCardId: number;
+  ledgerId: number;
+  organization: string;
+  organizationName: string;
+  cardId: string;
+  cardName: string;
+  cardNoMasked: string;
+  lastSyncedDate: string | null;
+  createdAt: string;
+}
+
+/**
+ * 동기화 결과
+ */
+export interface SyncResult {
+  insertedCount: number;
+  updatedCount: number;
+  skippedCount: number;
+  syncPeriod: string;
+}
+
+/**
+ * 카드사 기관 코드 맵핑
+ */
+export const CARD_ORGANIZATIONS: Record<string, string> = {
+  '0301': 'KB국민카드',
+  '0302': '현대카드',
+  '0303': '삼성카드',
+  '0304': 'NH농협카드',
+  '0305': 'BC카드',
+  '0306': '신한카드',
+  '0307': '씨티카드',
+  '0309': '우리카드',
+  '0310': '하나카드',
+  '0311': '롯데카드',
+  '0312': '전북카드',
+  '0313': '광주카드',
+  '0314': '수협카드',
+  '0315': '제주카드',
+};

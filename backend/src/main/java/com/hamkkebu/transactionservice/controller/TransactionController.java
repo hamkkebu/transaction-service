@@ -45,17 +45,6 @@ public class TransactionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(transaction));
     }
 
-    @GetMapping("/{id}")
-    @Operation(summary = "거래 상세 조회", description = "특정 거래의 상세 정보를 조회합니다")
-    public ResponseEntity<ApiResponse<TransactionResponse>> getTransaction(
-            @Parameter(hidden = true) @CurrentUser Long userId,
-            @PathVariable Long id) {
-
-        log.info("GET /api/v1/transactions/{} - userId: {}", id, userId);
-        TransactionResponse transaction = transactionService.getTransaction(id, userId);
-        return ResponseEntity.ok(ApiResponse.success(transaction));
-    }
-
     @GetMapping
     @Operation(summary = "거래 목록 조회 (페이징)", description = "특정 가계부의 거래 목록을 페이징으로 조회합니다")
     public ResponseEntity<ApiResponse<PageResponseDto<TransactionResponse>>> getTransactions(
@@ -88,29 +77,6 @@ public class TransactionController {
         log.info("GET /api/v1/transactions/summary?ledgerId={} - userId: {}", ledgerId, userId);
         TransactionSummary summary = transactionService.getSummaryByLedger(ledgerId, userId);
         return ResponseEntity.ok(ApiResponse.success(summary));
-    }
-
-    @PutMapping("/{id}")
-    @Operation(summary = "거래 수정", description = "거래 정보를 수정합니다")
-    public ResponseEntity<ApiResponse<TransactionResponse>> updateTransaction(
-            @Parameter(hidden = true) @CurrentUser Long userId,
-            @PathVariable Long id,
-            @Valid @RequestBody TransactionRequest request) {
-
-        log.info("PUT /api/v1/transactions/{} - userId: {}", id, userId);
-        TransactionResponse transaction = transactionService.updateTransaction(id, request, userId);
-        return ResponseEntity.ok(ApiResponse.success(transaction));
-    }
-
-    @DeleteMapping("/{id}")
-    @Operation(summary = "거래 삭제", description = "거래를 삭제합니다")
-    public ResponseEntity<ApiResponse<Void>> deleteTransaction(
-            @Parameter(hidden = true) @CurrentUser Long userId,
-            @PathVariable Long id) {
-
-        log.info("DELETE /api/v1/transactions/{} - userId: {}", id, userId);
-        transactionService.deleteTransaction(id, userId);
-        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     // ==================== 기간별 조회 API ====================
@@ -163,5 +129,44 @@ public class TransactionController {
         log.info("GET /api/v1/transactions/period?ledgerId={}&startDate={}&endDate={} - userId: {}", ledgerId, startDate, endDate, userId);
         PeriodTransactionSummary summary = transactionService.getPeriodSummary(ledgerId, startDate, endDate, userId);
         return ResponseEntity.ok(ApiResponse.success(summary));
+    }
+
+    // ==================== 개별 거래 CRUD (PathVariable) ====================
+    // 주의: /{id} 매핑은 반드시 명시적 경로(/all, /summary, /daily 등) 뒤에 위치해야 합니다.
+    // Spring은 선언 순서대로 매핑을 평가하므로, /{id}가 앞에 있으면
+    // "monthly" 같은 문자열을 id로 해석하려다 실패합니다.
+
+    @GetMapping("/{id}")
+    @Operation(summary = "거래 상세 조회", description = "특정 거래의 상세 정보를 조회합니다")
+    public ResponseEntity<ApiResponse<TransactionResponse>> getTransaction(
+            @Parameter(hidden = true) @CurrentUser Long userId,
+            @PathVariable Long id) {
+
+        log.info("GET /api/v1/transactions/{} - userId: {}", id, userId);
+        TransactionResponse transaction = transactionService.getTransaction(id, userId);
+        return ResponseEntity.ok(ApiResponse.success(transaction));
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "거래 수정", description = "거래 정보를 수정합니다")
+    public ResponseEntity<ApiResponse<TransactionResponse>> updateTransaction(
+            @Parameter(hidden = true) @CurrentUser Long userId,
+            @PathVariable Long id,
+            @Valid @RequestBody TransactionRequest request) {
+
+        log.info("PUT /api/v1/transactions/{} - userId: {}", id, userId);
+        TransactionResponse transaction = transactionService.updateTransaction(id, request, userId);
+        return ResponseEntity.ok(ApiResponse.success(transaction));
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "거래 삭제", description = "거래를 삭제합니다")
+    public ResponseEntity<ApiResponse<Void>> deleteTransaction(
+            @Parameter(hidden = true) @CurrentUser Long userId,
+            @PathVariable Long id) {
+
+        log.info("DELETE /api/v1/transactions/{} - userId: {}", id, userId);
+        transactionService.deleteTransaction(id, userId);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 }

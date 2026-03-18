@@ -47,7 +47,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
       JWT_SECRET: ${JWT_SECRET}
       # 공유 인프라 네트워크의 Kafka에 연결 (컨테이너 이름 사용)
-      KAFKA_BOOTSTRAP_SERVERS: hamkkebu-boilerplate-kafka:29092
+      KAFKA_BOOTSTRAP_SERVERS: hamkkebu-kafka:29092
       # Auth Service gRPC 연결
       AUTH_SERVICE_HOST: hamkkebu-auth-service-backend
       AUTH_SERVICE_GRPC_PORT: 9091
@@ -55,6 +55,11 @@ services:
       # Keycloak SSO 설정 (Docker 컨테이너에서 호스트 머신 접근)
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://host.docker.internal:8180/realms/hamkkebu
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://host.docker.internal:8180/realms/hamkkebu/protocol/openid-connect/certs
+      # Codef API 설정
+      CODEF_DEMO_CLIENT_ID: ${CODEF_DEMO_CLIENT_ID}
+      CODEF_DEMO_CLIENT_SECRET: ${CODEF_DEMO_CLIENT_SECRET}
+      CODEF_PUBLIC_KEY: ${CODEF_PUBLIC_KEY}
+      CODEF_SERVICE_TYPE: ${CODEF_SERVICE_TYPE:-DEMO}
     restart: always
     depends_on:
       database:
@@ -64,14 +69,24 @@ services:
       - hamkkebu-infra
 
   frontend:
-    build:
-      context: .
-      dockerfile: frontend/Dockerfile
+    image: node:18-alpine
     container_name: hamkkebu-transaction-service-frontend
+    working_dir: /app/frontend
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./frontend:/app/frontend
+      - ./common:/app/common
+      - transaction-frontend-modules:/app/frontend/node_modules
+    command: sh -c "npm install && npm run dev"
     ports:
-      # Transaction Service Frontend는 3003 포트 사용
-      - "${FRONTEND_PORT:-3003}:80"
-    restart: always
+      - "${FRONTEND_PORT:-3003}:3003"
+    environment:
+      - REACT_APP_KEYCLOAK_URL=http://localhost:8180
+      - REACT_APP_KEYCLOAK_REALM=hamkkebu
+      - REACT_APP_KEYCLOAK_CLIENT_ID=hamkkebu-frontend
+      - API_GATEWAY_URL=http://host.docker.internal:9000
+    restart: unless-stopped
     depends_on:
       - backend
     networks:
@@ -88,3 +103,4 @@ networks:
 
 volumes:
   mysql-data:
+  transaction-frontend-modules:
