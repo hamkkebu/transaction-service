@@ -65,6 +65,7 @@ CREATE TABLE tbl_transactions (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     ledger_id BIGINT NOT NULL,
     user_id BIGINT NOT NULL,
+    account_id BIGINT,
     transaction_type VARCHAR(20) NOT NULL,
     amount DECIMAL(19, 4) NOT NULL,
     description VARCHAR(500),
@@ -86,14 +87,19 @@ CREATE TABLE tbl_transactions (
     source_type VARCHAR(20) NOT NULL DEFAULT 'MANUAL',
     external_approval_no VARCHAR(100),
     linked_card_id BIGINT,
+    card_id BIGINT,
+    bank_account_id BIGINT,
 
     INDEX idx_ledger_id (ledger_id),
     INDEX idx_user_id (user_id),
+    INDEX idx_account_id (account_id),
     INDEX idx_transaction_date (transaction_date),
     INDEX idx_is_deleted (is_deleted),
     INDEX idx_source_type (source_type),
     INDEX idx_external_approval_no (external_approval_no),
-    INDEX idx_linked_card_id (linked_card_id)
+    INDEX idx_linked_card_id (linked_card_id),
+    INDEX idx_card_id (card_id),
+    INDEX idx_bank_account_id (bank_account_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ==========================================
@@ -214,11 +220,10 @@ CREATE TABLE IF NOT EXISTS tbl_cards (
     created_by       VARCHAR(50),
     updated_by       VARCHAR(50),
     is_deleted       BOOLEAN      NOT NULL DEFAULT FALSE,
-    deleted_at       DATETIME
+    deleted_at       DATETIME,
+    INDEX idx_card_account_id (account_id),
+    INDEX idx_card_connected_id (connected_id)
 );
-
-CREATE INDEX idx_card_account_id ON tbl_cards(account_id);
-CREATE INDEX idx_card_connected_id ON tbl_cards(connected_id);
 
 -- ==========================================
 -- 가계부-카드 연결 테이블 (M:N)
@@ -236,11 +241,10 @@ CREATE TABLE IF NOT EXISTS tbl_ledger_cards (
     is_deleted       BOOLEAN      NOT NULL DEFAULT FALSE,
     deleted_at       DATETIME,
     CONSTRAINT fk_ledger_card_card FOREIGN KEY (card_id) REFERENCES tbl_cards(card_id) ON DELETE CASCADE,
-    CONSTRAINT uk_ledger_card UNIQUE (ledger_id, card_id)
+    CONSTRAINT uk_ledger_card UNIQUE (ledger_id, card_id),
+    INDEX idx_ledger_card_ledger_id (ledger_id),
+    INDEX idx_ledger_card_card_id (card_id)
 );
-
-CREATE INDEX idx_ledger_card_ledger_id ON tbl_ledger_cards(ledger_id);
-CREATE INDEX idx_ledger_card_card_id ON tbl_ledger_cards(card_id);
 
 -- ==========================================
 -- 통장 테이블 (계정 소유)
@@ -258,11 +262,10 @@ CREATE TABLE IF NOT EXISTS tbl_bank_accounts (
     created_by       VARCHAR(50),
     updated_by       VARCHAR(50),
     is_deleted       BOOLEAN      NOT NULL DEFAULT FALSE,
-    deleted_at       DATETIME
+    deleted_at       DATETIME,
+    INDEX idx_bank_account_account_id (account_id),
+    INDEX idx_bank_account_connected_id (connected_id)
 );
-
-CREATE INDEX idx_bank_account_account_id ON tbl_bank_accounts(account_id);
-CREATE INDEX idx_bank_account_connected_id ON tbl_bank_accounts(connected_id);
 
 -- ==========================================
 -- 가계부-통장 연결 테이블 (M:N)
@@ -280,19 +283,8 @@ CREATE TABLE IF NOT EXISTS tbl_ledger_bank_accounts (
     is_deleted             BOOLEAN      NOT NULL DEFAULT FALSE,
     deleted_at             DATETIME,
     CONSTRAINT fk_ledger_bank_account FOREIGN KEY (bank_account_id) REFERENCES tbl_bank_accounts(bank_account_id) ON DELETE CASCADE,
-    CONSTRAINT uk_ledger_bank_account UNIQUE (ledger_id, bank_account_id)
+    CONSTRAINT uk_ledger_bank_account UNIQUE (ledger_id, bank_account_id),
+    INDEX idx_ledger_ba_ledger_id (ledger_id),
+    INDEX idx_ledger_ba_ba_id (bank_account_id)
 );
 
-CREATE INDEX idx_ledger_ba_ledger_id ON tbl_ledger_bank_accounts(ledger_id);
-CREATE INDEX idx_ledger_ba_ba_id ON tbl_ledger_bank_accounts(bank_account_id);
-
--- ==========================================
--- 거래내역 테이블에 새 컬럼 추가
--- ==========================================
-ALTER TABLE tbl_transactions ADD COLUMN IF NOT EXISTS account_id BIGINT AFTER user_id;
-ALTER TABLE tbl_transactions ADD COLUMN IF NOT EXISTS card_id BIGINT AFTER linked_card_id;
-ALTER TABLE tbl_transactions ADD COLUMN IF NOT EXISTS bank_account_id BIGINT AFTER card_id;
-
-CREATE INDEX IF NOT EXISTS idx_transaction_card_id ON tbl_transactions(card_id);
-CREATE INDEX IF NOT EXISTS idx_transaction_bank_account_id ON tbl_transactions(bank_account_id);
-CREATE INDEX IF NOT EXISTS idx_transaction_account_id ON tbl_transactions(account_id);
