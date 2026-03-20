@@ -50,8 +50,8 @@ public class TransactionService {
     public TransactionResponse createTransaction(TransactionRequest request, Long userId) {
         log.info("Creating transaction for ledger {} by user {}", request.getLedgerId(), userId);
 
-        // 가계부 소유권 검증
-        validateLedgerOwnership(request.getLedgerId(), userId);
+        // 가계부 접근 권한 검증 (소유자 또는 공유 멤버)
+        validateLedgerAccess(request.getLedgerId(), userId);
 
         Transaction transaction = transactionMapper.toEntity(request);
         transaction.setUserId(userId);

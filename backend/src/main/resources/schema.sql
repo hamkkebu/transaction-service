@@ -3,8 +3,7 @@
 -- ==========================================
 -- 사용자 테이블 (Auth Service에서 동기화)
 -- ==========================================
-DROP TABLE IF EXISTS tbl_users;
-CREATE TABLE tbl_users (
+CREATE TABLE IF NOT EXISTS tbl_users (
     user_id BIGINT PRIMARY KEY,
     username VARCHAR(50) NOT NULL,
     email VARCHAR(100) NOT NULL,
@@ -33,8 +32,7 @@ CREATE TABLE tbl_users (
 -- ==========================================
 -- 가계부 테이블 (Ledger Service에서 동기화)
 -- ==========================================
-DROP TABLE IF EXISTS tbl_ledgers;
-CREATE TABLE tbl_ledgers (
+CREATE TABLE IF NOT EXISTS tbl_ledgers (
     ledger_id BIGINT PRIMARY KEY,
     user_id BIGINT NOT NULL,
     ledger_name VARCHAR(100) NOT NULL,
@@ -60,8 +58,7 @@ CREATE TABLE tbl_ledgers (
 -- ==========================================
 -- 거래 테이블
 -- ==========================================
-DROP TABLE IF EXISTS tbl_transactions;
-CREATE TABLE tbl_transactions (
+CREATE TABLE IF NOT EXISTS tbl_transactions (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     ledger_id BIGINT NOT NULL,
     user_id BIGINT NOT NULL,
@@ -105,8 +102,7 @@ CREATE TABLE tbl_transactions (
 -- ==========================================
 -- Codef 연동 카드 테이블
 -- ==========================================
-DROP TABLE IF EXISTS tbl_linked_cards;
-CREATE TABLE tbl_linked_cards (
+CREATE TABLE IF NOT EXISTS tbl_linked_cards (
     linked_card_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
     ledger_id BIGINT NOT NULL,
@@ -136,9 +132,8 @@ CREATE TABLE tbl_linked_cards (
 -- ==========================================
 -- 가계부 공유 테이블 (Ledger Service에서 동기화)
 -- ==========================================
-DROP TABLE IF EXISTS tbl_ledger_shares;
-CREATE TABLE tbl_ledger_shares (
-    ledger_share_id BIGINT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS tbl_ledger_shares (
+    ledger_share_id BIGINT PRIMARY KEY AUTO_INCREMENT,
     ledger_id BIGINT NOT NULL,
     owner_id BIGINT NOT NULL,
     shared_user_id BIGINT NOT NULL,
@@ -169,8 +164,7 @@ CREATE TABLE tbl_ledger_shares (
 -- ==========================================
 -- Transactional Outbox 테이블
 -- ==========================================
-DROP TABLE IF EXISTS tbl_outbox_event;
-CREATE TABLE tbl_outbox_event (
+CREATE TABLE IF NOT EXISTS tbl_outbox_event (
     -- Primary Key
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
 
